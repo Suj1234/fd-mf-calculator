@@ -21,8 +21,8 @@ export default function MonthTable({ rows, baseWithdrawal }) {
             <th className="text-right py-2 pr-3 font-medium">FD Rate</th>
             <th className="text-right py-2 pr-3 font-medium">FD Opening</th>
             <th className="text-right py-2 pr-3 font-medium">FD Tax</th>
-            <th className="text-right py-2 pr-3 font-medium">Nom WD</th>
-            <th className="text-right py-2 pr-3 font-medium">Real Value</th>
+            <th className="text-right py-2 pr-3 font-medium">Withdrawal</th>
+            <th className="text-right py-2 pr-3 font-medium">Today's ₹ Value</th>
             <th className="text-right py-2 font-medium">FD Closing</th>
           </tr>
         </thead>

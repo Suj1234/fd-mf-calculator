@@ -20,9 +20,14 @@ export default function PhaseCard({ phase, baseWithdrawal, index }) {
   const [expanded, setExpanded] = useState(false)
   const color = PHASE_COLORS[index % PHASE_COLORS.length]
 
-  const startPct = phase.firstRealWd / baseWithdrawal
-  const endPct   = phase.lastRealWd  / baseWithdrawal
+  const firstRealWd = !phase.perpetual && phase.rows && phase.rows.length > 0
+    ? phase.rows[0].realWd
+    : baseWithdrawal
+  const endPct   = firstRealWd > 0 ? phase.lastRealWd / firstRealWd : 1
   const barColor = endPct >= 0.8 ? '#34d399' : endPct >= 0.5 ? '#fbbf24' : '#f87171'
+
+  // Only show FD rate badge if the rate actually declined during this cycle
+  const fdRateDropped = !phase.perpetual && phase.fdRateEnd < phase.fdRateStart
 
   return (
     <div
@@ -57,26 +62,34 @@ export default function PhaseCard({ phase, baseWithdrawal, index }) {
                 ∞ self-sustaining
               </span>
             )}
-            {!phase.perpetual && phase.fdRateStart !== phase.fdRateEnd && (
+            {fdRateDropped && (
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-border text-text-muted">
-                FD rate ↓ during cycle
+                FD rate fell during cycle
               </span>
             )}
           </div>
 
           {/* Key metrics */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
-            <Chip label="FD opened" value={formatCompact(phase.fdPrincipal)} valueClass="text-accent-fd" />
-            <Chip label="MF at start" value={formatCompact(phase.mfStart)} valueClass="text-accent-mf" />
-            <Chip label="Withdrawn" value={formatCompact(phase.totalNomWd)} valueClass="text-accent-wd" />
-            <Chip label="MF at end" value={phase.perpetual ? '∞' : formatCompact(phase.mfEndNominal)} valueClass="text-accent-mf" />
+            <Chip label="FD opened"  value={formatCompact(phase.fdPrincipal)} valueClass="text-accent-fd" />
+            <Chip label="MF at start" value={formatCompact(phase.mfStart)}   valueClass="text-accent-mf" />
+            <Chip label="Withdrawn"  value={formatCompact(phase.totalNomWd)} valueClass="text-accent-wd" />
+            <Chip label="MF at end"  value={phase.perpetual ? '∞' : formatCompact(phase.mfEndNominal)} valueClass="text-accent-mf" />
           </div>
 
           {/* Purchasing power bar */}
           <div className="mt-3">
             <div className="flex justify-between text-[10px] text-text-muted mb-1">
-              <span>Purchasing power of withdrawal: {formatCompact(phase.firstRealWd)} → {formatCompact(phase.lastRealWd)}</span>
-              <span style={{ color: barColor }}>{(endPct * 100).toFixed(0)}% of target</span>
+              <span>
+                Inflation erodes your{' '}
+                <span className="font-medium text-text-secondary">{formatCompact(baseWithdrawal)}/mo</span>
+                {' '}to{' '}
+                <span className="font-medium text-text-secondary">{formatCompact(phase.lastRealWd)} buying power</span>
+                {' '}by this phase's end
+              </span>
+              <span className="font-medium" style={{ color: barColor }}>
+                {(endPct * 100).toFixed(0)}% of phase-start value
+              </span>
             </div>
             <div className="h-1 bg-border rounded-full overflow-hidden">
               <div
@@ -87,7 +100,11 @@ export default function PhaseCard({ phase, baseWithdrawal, index }) {
           </div>
         </div>
 
-        <span className="text-text-muted text-sm flex-shrink-0 mt-1">{expanded ? '−' : '+'}</span>
+        {/* Expand toggle with label */}
+        <div className="flex-shrink-0 mt-1 flex items-center gap-1 text-[10px] text-text-muted hover:text-text-secondary transition-colors">
+          <span className="hidden sm:inline">{expanded ? 'Hide detail' : 'Month-by-month detail'}</span>
+          <span className="text-sm font-medium">{expanded ? '−' : '+'}</span>
+        </div>
       </button>
 
       {/* Expanded detail */}

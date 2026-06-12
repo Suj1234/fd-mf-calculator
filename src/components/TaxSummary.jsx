@@ -1,16 +1,47 @@
-import { formatCompact, formatINR } from '../logic/formatters'
+import { formatCompact } from '../logic/formatters'
 
-export default function TaxSummary({ phases }) {
+export default function TaxSummary({ phases, perpetual }) {
   const totalFDTax = phases.reduce((s, p) => s + p.totalFDTax, 0)
-  const totalLTCG = phases.reduce((s, p) => s + (p.ltcgTax || 0), 0)
-  const totalTax = totalFDTax + totalLTCG
+  const totalLTCG  = phases.reduce((s, p) => s + (p.ltcgTax || 0), 0)
+  const totalTax   = totalFDTax + totalLTCG
+
+  const ltcgPct = totalTax > 0 ? Math.round((totalLTCG / totalTax) * 100) : 0
+  const fdPct   = 100 - ltcgPct
+
+  // Group phases where total tax < ₹1L (100 000) into a summary row
+  const THRESHOLD = 100000
+  const significantPhases = phases.filter((p) => (p.totalFDTax + (p.ltcgTax || 0)) >= THRESHOLD)
+  const minorPhases       = phases.filter((p) => (p.totalFDTax + (p.ltcgTax || 0)) < THRESHOLD)
+
+  const minorFirst = minorPhases[0]
+  const minorLast  = minorPhases[minorPhases.length - 1]
+  const minorTotal = minorPhases.reduce((s, p) => s + p.totalFDTax + (p.ltcgTax || 0), 0)
 
   return (
     <div className="bg-card rounded-xl border border-border overflow-hidden">
       <div className="px-5 py-4 border-b border-border">
         <h3 className="text-sm font-semibold text-text-primary">Tax Summary</h3>
-        <p className="text-xs text-text-muted mt-0.5">FD interest tax (yearly) + LTCG tax paid when switching from MF to a new FD at end of each phase</p>
+        <p className="text-xs text-text-muted mt-0.5">
+          FD interest tax (each phase) + LTCG tax paid when switching from MF to a new FD at end of each cycle
+        </p>
       </div>
+
+      {/* Insight */}
+      {totalTax > 0 && (
+        <div className="px-5 py-3 bg-[#f8faff] border-b border-border">
+          <p className="text-xs text-text-secondary leading-relaxed">
+            <span className="font-semibold">Insight:</span>{' '}
+            Of your total {formatCompact(totalTax)} tax, {ltcgPct}% is LTCG (from MF redemption) and {fdPct}% is FD interest tax.
+            {ltcgPct > 50 && ' Disabling LTCG (in Advanced Settings) will significantly extend your runway.'}
+          </p>
+          {perpetual && (
+            <p className="text-[10px] text-text-muted mt-1.5">
+              * This scenario runs perpetually — FD interest tax is cumulative over the full indefinite period and will appear very large. Compare the Inflation-Adjusted tab for a realistic retirement horizon.
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
@@ -24,13 +55,11 @@ export default function TaxSummary({ phases }) {
             </tr>
           </thead>
           <tbody>
-            {phases.map((phase, i) => (
+            {significantPhases.map((phase, i) => (
               <tr key={i} className="border-b border-border/40 hover:bg-card-hover/50 transition-colors">
                 <td className="px-4 py-2.5 font-medium text-text-secondary">
                   Phase {phase.phase}
-                  {phase.perpetual && (
-                    <span className="ml-2 text-accent-mf text-[10px]">∞</span>
-                  )}
+                  {phase.perpetual && <span className="ml-2 text-accent-mf text-[10px]">∞</span>}
                 </td>
                 <td className="px-4 py-2.5 text-right num text-accent-tax/80">
                   {formatCompact(phase.totalFDTax)}
@@ -49,6 +78,25 @@ export default function TaxSummary({ phases }) {
                 </td>
               </tr>
             ))}
+
+            {/* Grouped minor phases row */}
+            {minorPhases.length > 0 && (
+              <tr className="border-b border-border/40 bg-card-hover/30">
+                <td className="px-4 py-2.5 font-medium text-text-muted italic">
+                  {minorPhases.length === 1
+                    ? `Phase ${minorFirst.phase}`
+                    : `Phases ${minorFirst.phase}–${minorLast.phase}`}
+                  <span className="ml-1.5 not-italic font-normal text-[10px]">
+                    (corpus nearing depletion — tax negligible)
+                  </span>
+                </td>
+                <td className="px-4 py-2.5 text-right num text-text-muted" colSpan={3}>combined</td>
+                <td className="px-4 py-2.5 text-right num text-text-muted">
+                  {minorTotal > 0 ? formatCompact(minorTotal) : '≈ ₹0'}
+                </td>
+                <td className="px-4 py-2.5 text-right text-text-muted">—</td>
+              </tr>
+            )}
           </tbody>
           <tfoot>
             <tr className="border-t border-border bg-card-hover">

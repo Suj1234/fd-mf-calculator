@@ -1,20 +1,38 @@
 import { useState } from 'react'
 import { formatDuration } from '../logic/formatters'
 
-const PHASE_COLORS = [
-  '#4f46e5', '#059669', '#d97706', '#0891b2', '#7c3aed',
-  '#ea580c', '#db2777', '#0d9488', '#65a30d', '#6d28d9',
-]
+// Duration-based color: green (long/healthy) → amber → red (short/depleted)
+function getPhaseColor(months, isPerpetual) {
+  if (isPerpetual) return '#059669'
+  if (months >= 72) return '#059669'   // 6+ yr  → deep green
+  if (months >= 36) return '#34d399'   // 3–6 yr → medium green
+  if (months >= 12) return '#d97706'   // 1–3 yr → amber
+  if (months >= 6)  return '#ea580c'   // 6–12 mo → orange
+  if (months >= 2)  return '#dc2626'   // 2–6 mo → red
+  return '#7f1d1d'                     // < 2 mo → dark red
+}
 
 export default function PhaseTimeline({ phases, perpetual }) {
-  const [tooltip, setTooltip] = useState(null) // { text, leftPct }
+  const [tooltip, setTooltip] = useState(null)
   const totalMonths = phases.reduce((s, p) => s + p.fdMonths, 0) || 1
+
+  // Legend: show each phase > 6 months individually; group ≤ 6 months
+  const longPhases  = phases.filter((p) => p.fdMonths > 6 || p.perpetual)
+  const shortPhases = phases.filter((p) => p.fdMonths <= 6 && !p.perpetual)
+
+  // Insight callout: first phase duration and where decline starts
+  const firstPhase = phases[0]
+  const firstYears  = firstPhase ? (firstPhase.fdMonths / 12).toFixed(1) : 0
+  const declinePhase = phases.findIndex((p, i) => i > 0 && p.fdMonths < 12)
+  const calloutText = firstPhase && !perpetual
+    ? `Your corpus is healthy for the first ~${firstYears} years (Phase 1)${declinePhase > 0 ? `, then phases shorten from Phase ${declinePhase + 1} onward as the FD corpus shrinks with each cycle` : ''}.`
+    : null
 
   return (
     <div className="flex flex-col gap-3">
       <div>
         <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Lifecycle Timeline</h3>
-        <p className="text-[10px] text-text-muted mt-0.5">Each block = one FD cycle. Hover to see duration.</p>
+        <p className="text-[10px] text-text-muted mt-0.5">Each block = one FD cycle. Color shows phase health: green = long, red = short.</p>
       </div>
 
       {/* Bar with tooltip */}
@@ -32,7 +50,7 @@ export default function PhaseTimeline({ phases, perpetual }) {
         <div className="flex rounded-lg overflow-hidden h-10 w-full">
           {phases.map((phase, i) => {
             const pct = (phase.fdMonths / totalMonths) * 100
-            const color = PHASE_COLORS[i % PHASE_COLORS.length]
+            const color = getPhaseColor(phase.fdMonths, phase.perpetual)
             const isLast = i === phases.length - 1
             const cumulativePct = phases.slice(0, i).reduce((s, p) => s + (p.fdMonths / totalMonths) * 100, 0)
             const midPct = cumulativePct + pct / 2
@@ -48,9 +66,16 @@ export default function PhaseTimeline({ phases, perpetual }) {
                 })}
                 onMouseLeave={() => setTooltip(null)}
               >
-                {pct > 8 && (
+                {/* Phase label: inside block if wide enough */}
+                {pct > 6 && (
                   <span className="text-white text-xs font-semibold truncate px-1 select-none drop-shadow">
                     {isLast && perpetual ? '∞' : `P${phase.phase}`}
+                  </span>
+                )}
+                {/* Duration inside block on larger blocks */}
+                {pct > 14 && (
+                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-white/70 text-[9px] font-medium select-none whitespace-nowrap drop-shadow">
+                    {phase.perpetual ? '∞' : formatDuration(phase.fdMonths)}
                   </span>
                 )}
               </div>
@@ -59,18 +84,37 @@ export default function PhaseTimeline({ phases, perpetual }) {
         </div>
       </div>
 
-      {/* Legend */}
+      {/* Legend — only phases > 6 months individually; short phases grouped */}
       <div className="flex gap-x-4 gap-y-1 flex-wrap">
-        {phases.map((phase, i) => (
-          <div key={i} className="flex items-center gap-1.5 text-[10px] text-text-muted">
+        {longPhases.map((phase) => (
+          <div key={phase.phase} className="flex items-center gap-1.5 text-[10px] text-text-muted">
             <span
               className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0"
-              style={{ backgroundColor: PHASE_COLORS[i % PHASE_COLORS.length] }}
+              style={{ backgroundColor: getPhaseColor(phase.fdMonths, phase.perpetual) }}
             />
             <span>P{phase.phase}: {phase.perpetual ? '∞ Perpetual' : formatDuration(phase.fdMonths)}</span>
           </div>
         ))}
+        {shortPhases.length > 0 && (
+          <div className="flex items-center gap-1.5 text-[10px] text-text-muted">
+            <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0 bg-red-400" />
+            <span>
+              {shortPhases.length === 1
+                ? `P${shortPhases[0].phase}: ${formatDuration(shortPhases[0].fdMonths)} (nearing depletion)`
+                : `P${shortPhases[0].phase}–P${shortPhases[shortPhases.length - 1].phase}: each under 6 months (corpus nearing depletion)`}
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* Callout */}
+      {calloutText && (
+        <div className="bg-[#f0f9f4] border border-emerald-100 rounded-lg px-3.5 py-2.5">
+          <p className="text-[11px] text-emerald-800 leading-relaxed">
+            <span className="font-semibold">💡 </span>{calloutText}
+          </p>
+        </div>
+      )}
     </div>
   )
 }
