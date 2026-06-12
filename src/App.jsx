@@ -15,13 +15,43 @@ import './index.css'
 
 function parseFromURL() {
   const params = new URLSearchParams(window.location.search)
+  const overrides = {}
+
+  // New corpus format: tc = total corpus, fpct = FD percentage
+  const tc = params.get('tc')
+  const fpct = params.get('fpct')
+  if (tc !== null) {
+    overrides.totalCorpus = parseFloat(tc)
+    overrides.fdPct = fpct !== null ? Math.min(0.8, Math.max(0.2, parseFloat(fpct))) : 0.5
+    overrides.fdAmount = Math.round(overrides.totalCorpus * overrides.fdPct)
+    overrides.mfAmount = Math.round(overrides.totalCorpus * (1 - overrides.fdPct))
+  } else {
+    // Legacy format: fd + mf separately
+    const fd = params.get('fd')
+    const mf = params.get('mf')
+    if (fd !== null || mf !== null) {
+      const fdVal = fd !== null ? parseFloat(fd) : DEFAULT_INPUTS.fdAmount
+      const mfVal = mf !== null ? parseFloat(mf) : DEFAULT_INPUTS.mfAmount
+      overrides.fdAmount = fdVal
+      overrides.mfAmount = mfVal
+      overrides.totalCorpus = fdVal + mfVal
+      overrides.fdPct = overrides.totalCorpus > 0
+        ? Math.min(0.8, Math.max(0.2, fdVal / overrides.totalCorpus))
+        : 0.5
+    }
+  }
+
+  // Age
+  const age = params.get('age')
+  if (age !== null) overrides.currentAge = Math.min(90, Math.max(0, parseInt(age, 10)))
+
+  // Numeric/boolean params
   const map = {
-    fd: 'fdAmount', mf: 'mfAmount', wd: 'monthlyWithdrawal',
+    wd: 'monthlyWithdrawal',
     fdr: 'fdStartRate', mr: 'mfRate', inf: 'inflationRate',
     tax: 'taxSlab', ltcg: 'ltcgEnabled', fdd: 'fdDeclineEnabled',
     floor: 'fdFloor', ltcgex: 'ltcgExemption',
   }
-  const overrides = {}
   for (const [short, key] of Object.entries(map)) {
     const v = params.get(short)
     if (v !== null) {
@@ -33,23 +63,23 @@ function parseFromURL() {
 }
 
 function serializeToURL(inputs) {
-  const map = {
-    fd: 'fdAmount', mf: 'mfAmount', wd: 'monthlyWithdrawal',
-    fdr: 'fdStartRate', mr: 'mfRate', inf: 'inflationRate',
-    tax: 'taxSlab', ltcg: 'ltcgEnabled', fdd: 'fdDeclineEnabled',
-    floor: 'fdFloor', ltcgex: 'ltcgExemption',
-  }
   const params = new URLSearchParams()
-  for (const [short, key] of Object.entries(map)) {
-    const v = inputs[key]
-    if (v === true) params.set(short, '1')
-    else if (v === false) params.set(short, '0')
-    else params.set(short, String(v))
-  }
+  params.set('tc', String(inputs.totalCorpus))
+  params.set('fpct', String(inputs.fdPct))
+  if (inputs.currentAge > 0) params.set('age', String(inputs.currentAge))
+  params.set('wd', String(inputs.monthlyWithdrawal))
+  params.set('fdr', String(inputs.fdStartRate))
+  params.set('mr', String(inputs.mfRate))
+  params.set('inf', String(inputs.inflationRate))
+  params.set('tax', String(inputs.taxSlab))
+  params.set('ltcg', inputs.ltcgEnabled ? '1' : '0')
+  params.set('fdd', inputs.fdDeclineEnabled ? '1' : '0')
+  params.set('floor', String(inputs.fdFloor))
+  params.set('ltcgex', String(inputs.ltcgExemption))
   return '?' + params.toString()
 }
 
-// ─── Inline notes (helpful, not alarming) ─────────────────────────────────────
+// ─── Inline notes (blue/calm — not alarming) ──────────────────────────────────
 
 function InlineWarnings({ inputs, result }) {
   const notes = []
@@ -59,7 +89,7 @@ function InlineWarnings({ inputs, result }) {
     const firstNetInterest = fdAmount * (fdStartRate / 12) * (1 - taxSlab)
     if (monthlyWithdrawal > firstNetInterest) {
       notes.push(
-        `Your ₹${formatCompact(monthlyWithdrawal)} monthly withdrawal is more than the ₹${formatCompact(firstNetInterest)} FD interest earned. This is normal — you'll draw from both interest and FD principal each month. The simulation handles this automatically.`
+        `You're withdrawing more than your FD earns in interest — so you'll draw from principal too. This is common and fully factored into the simulation.`
       )
     }
   }
@@ -74,9 +104,9 @@ function InlineWarnings({ inputs, result }) {
   return (
     <div className="flex flex-col gap-1.5">
       {notes.map((w, i) => (
-        <div key={i} className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5">
-          <span className="text-amber-500 flex-shrink-0 text-sm mt-0.5">ℹ</span>
-          <p className="text-xs text-amber-800 leading-relaxed">{w}</p>
+        <div key={i} className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3.5 py-2.5">
+          <span className="text-blue-400 flex-shrink-0 text-sm mt-0.5">ℹ</span>
+          <p className="text-xs text-blue-700 leading-relaxed">{w}</p>
         </div>
       ))}
     </div>
@@ -85,7 +115,7 @@ function InlineWarnings({ inputs, result }) {
 
 // ─── More Details (Tax + Comparison, collapsed) ────────────────────────────────
 
-function MoreDetails({ scenarioA, scenarioB, phases }) {
+function MoreDetails({ scenarioA, scenarioB, phases, perpetual }) {
   const [open, setOpen] = useState(false)
   return (
     <div className="rounded-xl border border-border overflow-hidden">
@@ -102,7 +132,7 @@ function MoreDetails({ scenarioA, scenarioB, phases }) {
       </button>
       {open && (
         <div className="flex flex-col gap-4 p-4 border-t border-border bg-bg">
-          <TaxSummary phases={phases} />
+          <TaxSummary phases={phases} perpetual={perpetual} />
           <ComparisonTable scenarioA={scenarioA} scenarioB={scenarioB} />
         </div>
       )}
@@ -152,7 +182,7 @@ function EmptyState() {
       </div>
       <p className="text-sm font-medium text-text-secondary">Enter your corpus to see projections</p>
       <p className="text-xs text-text-muted max-w-xs leading-relaxed">
-        Fill in your FD amount, Mutual Fund amount, and monthly withdrawal on the left.
+        Set your total retirement corpus, split between FD and MF, and monthly withdrawal on the left.
         Results update instantly.
       </p>
     </div>
@@ -193,7 +223,7 @@ export default function App() {
   const copyShareLink = useCallback(() => {
     navigator.clipboard.writeText(window.location.href).then(() => {
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      setTimeout(() => setCopied(false), 3000)
     })
   }, [])
 
@@ -211,23 +241,12 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-sm font-semibold text-text-primary leading-none">FD + MF Withdrawal Calculator</h1>
-              <p className="text-[10px] text-text-muted mt-0.5">Indian Retirement Planner</p>
+              <p className="text-[10px] text-text-muted mt-0.5">FD + MF retirement simulator · Real Indian tax rules</p>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowStrategy(true)}
-              className="h-8 px-3 flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary border border-border rounded-lg bg-card hover:bg-card-hover transition-colors"
-            >
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.3"/>
-                <path d="M8 5v4M8 11v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-              How it works
-            </button>
+          {/* Share button */}
+          <div className="relative">
             <button
               type="button"
               onClick={copyShareLink}
@@ -239,12 +258,35 @@ export default function App() {
               </svg>
               {copied ? '✓ Copied' : 'Share'}
             </button>
+            {copied && (
+              <div className="absolute right-0 top-full mt-2 bg-[#0f172a] text-white text-[11px] px-3 py-2 rounded-lg z-50 shadow-card-md leading-relaxed"
+                style={{ minWidth: '220px' }}>
+                <div className="font-medium">Link copied!</div>
+                <div className="opacity-70 mt-0.5">Includes your inputs — anyone with this link sees your numbers.</div>
+                <div className="absolute bottom-full right-3 border-4 border-transparent border-b-[#0f172a]" />
+              </div>
+            )}
           </div>
         </div>
       </header>
 
       {/* ── Body ── */}
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6">
+
+        {/* Hero statement banner */}
+        <div className="mb-5 bg-card border border-border rounded-xl px-5 py-3.5 flex items-center justify-between gap-4 shadow-card">
+          <p className="text-sm text-text-secondary leading-relaxed">
+            Most Indian retirees split savings between FDs and Mutual Funds. This calculator shows exactly how long that lasts — after inflation, falling FD rates, and LTCG tax.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowStrategy(true)}
+            className="flex-shrink-0 h-8 px-3 flex items-center gap-1.5 text-xs text-accent-fd hover:text-accent-fd/80 border border-accent-fd/30 bg-accent-fd/5 rounded-lg hover:bg-accent-fd/10 transition-colors font-medium"
+          >
+            How it works →
+          </button>
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-6">
 
           {/* Left — Inputs */}
@@ -278,7 +320,7 @@ export default function App() {
                       </div>
                       <div className="text-xs text-text-secondary leading-relaxed">
                         <span className="font-semibold text-accent-mf">Meanwhile — MF compounds.</span>{' '}
-                        Your Mutual Fund grows untouched at ~12% CAGR while you live off the FD.
+                        Your Mutual Fund grows untouched at ~{(debouncedInputs.mfRate * 100).toFixed(0)}% CAGR while you live off the FD.
                       </div>
                       <div className="text-xs text-text-secondary leading-relaxed">
                         <span className="font-semibold text-accent-fd">When FD runs out → new cycle.</span>{' '}
@@ -295,9 +337,12 @@ export default function App() {
                   scenarioB={result.scenarioB}
                   activeScenario={activeScenario}
                   onScenarioChange={setActiveScenario}
+                  currentAge={debouncedInputs.currentAge}
+                  monthlyWithdrawal={debouncedInputs.monthlyWithdrawal}
+                  inflationRate={debouncedInputs.inflationRate}
                 />
 
-                {/* Subtle inline warnings */}
+                {/* Subtle inline notes */}
                 <InlineWarnings inputs={debouncedInputs} result={result} />
 
                 {activeResult && (
@@ -316,11 +361,11 @@ export default function App() {
                         <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">
                           FD Cycles
                           <span className="ml-2 font-normal normal-case tracking-normal text-text-muted">
-                            — click any cycle to see month-by-month detail
+                            — click any cycle to expand month-by-month detail
                           </span>
                         </h3>
                         <span className="text-[10px] text-text-muted">
-                          Scenario {activeScenario} · {activeScenario === 'A' ? 'Fixed' : 'Inflation-adjusted'}
+                          {activeScenario === 'A' ? 'Fixed Withdrawal' : 'Inflation-Adjusted'}
                         </span>
                       </div>
                       {activeResult.phases.map((phase, i) => (
@@ -338,6 +383,7 @@ export default function App() {
                       scenarioA={result.scenarioA}
                       scenarioB={result.scenarioB}
                       phases={activeResult.phases}
+                      perpetual={activeResult.perpetual}
                     />
                   </>
                 )}

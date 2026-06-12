@@ -1,4 +1,7 @@
 export const DEFAULT_INPUTS = {
+  totalCorpus: 30000000,
+  fdPct: 0.5,
+  currentAge: 0,
   fdAmount: 15000000,
   mfAmount: 15000000,
   monthlyWithdrawal: 175000,
@@ -23,4 +26,5 @@ export const TOOLTIPS = {
   ltcgEnabled: 'Equity MF redemption held >1yr: 12.5% on gains above ₹1.25L (Budget 2024).',
   fdDeclineEnabled: 'Based on SBI historical data: rates dropped from ~9% (2012) to ~5.5% (2021). Modelled as 0.5% drop every 5 years, floor at 5.5%.',
   ltcgExemption: 'LTCG exemption limit per financial year. Currently ₹1.25L (Budget 2024). Editable in case law changes.',
+  corpusSplit: 'FD provides stable monthly income. MF grows your corpus over time at higher returns. A 50/50 split is a common balanced starting point.',
 }

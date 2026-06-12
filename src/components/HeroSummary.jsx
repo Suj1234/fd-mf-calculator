@@ -1,25 +1,80 @@
 import { formatCompact, formatDuration } from '../logic/formatters'
 
-const SCENARIO_DESC = {
-  A: 'You withdraw the same fixed amount every month. Simple and predictable, but inflation slowly erodes your purchasing power each year.',
-  B: 'Your withdrawal increases every year with inflation, so your real purchasing power stays constant. More realistic for long-term retirement planning.',
-}
+// ─── Benchmark band ────────────────────────────────────────────────────────────
 
-function StatCell({ label, value, sub, valueClass = 'text-text-secondary' }) {
+function BenchmarkBand({ totalMonths, perpetual }) {
+  const MAX_MONTHS = 480 // 40 years caps the bar
+  const rawPos = perpetual ? 99 : (totalMonths / MAX_MONTHS) * 100
+  const markerPos = Math.min(99, Math.max(1, rawPos))
+
+  const zone = (perpetual || totalMonths >= 300) ? 'Healthy'
+    : totalMonths >= 180 ? 'Moderate'
+    : 'Caution'
+
   return (
-    <div className="bg-card px-4 py-4 text-center">
-      <div className="text-[10px] uppercase tracking-[0.1em] text-text-muted mb-1.5">{label}</div>
-      <div className={`num text-sm font-semibold ${valueClass}`}>{value}</div>
-      {sub && <div className="num text-[10px] text-text-muted mt-0.5">{sub}</div>}
+    <div className="px-6 pb-6 pt-1">
+      {/* "You're here" label above marker */}
+      <div className="relative h-5 mb-0.5">
+        <div
+          className="absolute flex flex-col items-center"
+          style={{ left: `${markerPos}%`, transform: 'translateX(-50%)' }}
+        >
+          <span className="text-[9px] text-text-muted whitespace-nowrap leading-none">you're here</span>
+          <span className="text-[9px] text-text-muted leading-none">↓</span>
+        </div>
+      </div>
+
+      {/* Segmented bar */}
+      <div className="relative flex rounded-md overflow-hidden h-2.5">
+        {/* Zone fills */}
+        <div className="bg-red-200"   style={{ width: '37.5%' }} />
+        <div className="bg-amber-200" style={{ width: '25%' }}   />
+        <div className="bg-emerald-200" style={{ width: '37.5%' }} />
+        {/* Marker line */}
+        <div
+          className="absolute top-0 bottom-0 w-0.5 bg-[#0f172a] rounded-full"
+          style={{ left: `${markerPos}%`, transform: 'translateX(-50%)' }}
+        />
+      </div>
+
+      {/* Zone labels */}
+      <div className="flex mt-1.5">
+        <div className="text-center" style={{ width: '37.5%' }}>
+          <div className={`text-[9px] font-semibold ${zone === 'Caution' ? 'text-red-500' : 'text-red-400'}`}>Caution</div>
+          <div className="text-[9px] text-text-muted">0–15 yr</div>
+        </div>
+        <div className="text-center" style={{ width: '25%' }}>
+          <div className={`text-[9px] font-semibold ${zone === 'Moderate' ? 'text-amber-500' : 'text-amber-400'}`}>Moderate</div>
+          <div className="text-[9px] text-text-muted">15–25 yr</div>
+        </div>
+        <div className="text-center" style={{ width: '37.5%' }}>
+          <div className={`text-[9px] font-semibold ${zone === 'Healthy' ? 'text-emerald-600' : 'text-emerald-400'}`}>Healthy</div>
+          <div className="text-[9px] text-text-muted">25+ yr</div>
+        </div>
+      </div>
     </div>
   )
 }
 
-export default function HeroSummary({ scenarioA, scenarioB, activeScenario, onScenarioChange }) {
+// ─── Stat cell ─────────────────────────────────────────────────────────────────
+
+function StatCell({ label, value, sub, subClass = 'text-text-muted', valueClass = 'text-text-secondary' }) {
+  return (
+    <div className="bg-card px-4 py-4 text-center">
+      <div className="text-[10px] uppercase tracking-[0.1em] text-text-muted mb-1.5">{label}</div>
+      <div className={`num text-sm font-semibold ${valueClass}`}>{value}</div>
+      {sub && <div className={`num text-[10px] mt-0.5 ${subClass}`}>{sub}</div>}
+    </div>
+  )
+}
+
+// ─── Main component ────────────────────────────────────────────────────────────
+
+export default function HeroSummary({ scenarioA, scenarioB, activeScenario, onScenarioChange, currentAge, monthlyWithdrawal, inflationRate }) {
   const active = activeScenario === 'A' ? scenarioA : scenarioB
   const perpetual = active.perpetual
 
-  const duration = perpetual
+  const durationText = perpetual
     ? 'FOREVER'
     : active.totalMonths ? formatDuration(active.totalMonths) : '—'
 
@@ -37,18 +92,44 @@ export default function HeroSummary({ scenarioA, scenarioB, activeScenario, onSc
     ? 'text-accent-tax'
     : 'text-text-primary'
 
+  // Age-based display
+  const ageAtEnd = currentAge > 0 && !perpetual && active.totalMonths
+    ? Math.round(currentAge + active.totalMonths / 12)
+    : null
+
   const tabDuration = (r) =>
-    r.perpetual ? 'Forever' : r.totalMonths ? formatDuration(r.totalMonths) : '—'
+    r.perpetual ? '∞ Perpetual' : r.totalMonths ? formatDuration(r.totalMonths) : '—'
+
+  const futureWd5yr = monthlyWithdrawal && inflationRate
+    ? Math.round(monthlyWithdrawal * Math.pow(1 + inflationRate, 5))
+    : null
+
+  const tabs = [
+    {
+      key: 'A',
+      label: 'Fixed Withdrawal',
+      sub: monthlyWithdrawal
+        ? `Always ${formatCompact(monthlyWithdrawal)}/mo — same every month, but buys less as prices rise`
+        : 'Same ₹ every month — buys less over time as prices rise',
+      result: scenarioA,
+    },
+    {
+      key: 'B',
+      label: 'Inflation-Adjusted',
+      sub: futureWd5yr
+        ? `You withdraw more each year to match rising prices — e.g. ${formatCompact(monthlyWithdrawal)}/mo today becomes ~${formatCompact(futureWd5yr)}/mo in 5 yrs (same lifestyle, higher price tags)`
+        : 'You withdraw more each year to match rising prices — same lifestyle, higher price tags',
+      result: scenarioB,
+      recommended: true,
+    },
+  ]
 
   return (
     <div className="flex flex-col gap-3">
 
       {/* ── Scenario tab switcher ── */}
       <div className="grid grid-cols-2 gap-2 bg-[#e8edf8] border border-border rounded-2xl p-1.5">
-        {[
-          { key: 'A', result: scenarioA, label: 'Scenario A', sub: 'Fixed withdrawal' },
-          { key: 'B', result: scenarioB, label: 'Scenario B', sub: 'Inflation-adjusted' },
-        ].map(({ key, result, label, sub }) => {
+        {tabs.map(({ key, result, label, sub, recommended }) => {
           const isActive = activeScenario === key
           return (
             <button
@@ -60,7 +141,14 @@ export default function HeroSummary({ scenarioA, scenarioB, activeScenario, onSc
               }`}
             >
               <div className="min-w-0">
-                <div className="text-[10px] font-bold text-text-muted uppercase tracking-[0.12em]">{label}</div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <div className="text-[10px] font-bold text-text-muted uppercase tracking-[0.12em]">{label}</div>
+                  {recommended && (
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-accent-mf text-white font-bold leading-none uppercase tracking-wide">
+                      RECOMMENDED
+                    </span>
+                  )}
+                </div>
                 <div className="text-xs text-text-secondary mt-0.5">{sub}</div>
               </div>
               <div className={`num text-base font-bold flex-shrink-0 ${
@@ -73,50 +161,69 @@ export default function HeroSummary({ scenarioA, scenarioB, activeScenario, onSc
         })}
       </div>
 
-      {/* ── Scenario description ── */}
-      <p className="text-xs text-text-muted px-1 leading-relaxed">
-        <span className="font-medium text-text-secondary">Scenario {activeScenario}: </span>
-        {SCENARIO_DESC[activeScenario]}
-      </p>
-
       {/* ── Hero card ── */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-card">
         {/* The big answer */}
-        <div className="py-10 px-6 text-center">
+        <div className="py-8 px-6 text-center">
           <p className="text-[10px] uppercase tracking-[0.18em] text-text-muted mb-4">
-            {activeScenario === 'A' ? 'Fixed withdrawal · Scenario A' : 'Inflation-adjusted · Scenario B'}
+            {activeScenario === 'A' ? 'Fixed Withdrawal · Scenario A' : 'Inflation-Adjusted · Scenario B (recommended)'}
           </p>
-          <p
-            className={`num font-bold leading-none ${heroColor}`}
-            style={{ fontSize: perpetual ? '5rem' : '3.5rem' }}
-          >
-            {duration}
-          </p>
-          {subLabel && (
+
+          {ageAtEnd ? (
+            <>
+              <p className={`font-bold leading-tight ${heroColor}`} style={{ fontSize: '3rem' }}>
+                Until age {ageAtEnd}
+              </p>
+              <p className="text-sm text-text-muted mt-2">
+                ({formatDuration(active.totalMonths)} from today)
+              </p>
+            </>
+          ) : (
+            <p
+              className={`num font-bold leading-none ${heroColor}`}
+              style={{ fontSize: perpetual ? '5rem' : '3.5rem' }}
+            >
+              {durationText}
+            </p>
+          )}
+
+          {subLabel && !ageAtEnd && (
             <p className="text-sm text-text-muted mt-3">{subLabel}</p>
           )}
         </div>
 
-        {/* Stats — gap-px creates dividers */}
+        {/* Benchmark band (non-perpetual only) */}
+        {!perpetual && active.totalMonths && (
+          <BenchmarkBand totalMonths={active.totalMonths} perpetual={false} />
+        )}
+        {perpetual && (
+          <BenchmarkBand totalMonths={active.totalMonths} perpetual={true} />
+        )}
+
+        {/* Stats — reordered by importance */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border border-t border-border">
+          {/* 1. Final MF — today's ₹ is the primary value */}
           <StatCell
-            label="Total withdrawn"
-            value={formatCompact(active.totalNomWd)}
-            sub={`real: ${formatCompact(active.totalRealWd)}`}
-            valueClass="text-accent-wd"
+            label="Final MF value"
+            value={perpetual ? '∞' : formatCompact(active.finalMF)}
+            sub={perpetual ? 'growing indefinitely' : undefined}
+            subClass="text-text-muted"
+            valueClass="text-accent-mf"
           />
+          {/* 2. Tax paid — FD + LTCG merged */}
           <StatCell
             label="Tax paid"
             value={formatCompact(active.totalTax)}
-            sub={`FD tax: ${formatCompact(active.totalFDTax)}`}
+            sub={`FD: ${formatCompact(active.totalFDTax)} · LTCG: ${formatCompact(active.totalLTCG)}`}
             valueClass="text-accent-tax"
           />
+          {/* 3. Total withdrawn */}
           <StatCell
-            label="Final MF corpus"
-            value={perpetual ? '∞ Growing' : formatCompact(active.finalMF)}
-            sub={perpetual ? '' : `real: ${formatCompact(active.finalMFReal)}`}
-            valueClass="text-accent-mf"
+            label="Total withdrawn"
+            value={formatCompact(active.totalNomWd)}
+            valueClass="text-accent-wd"
           />
+          {/* 4. FD cycles */}
           <StatCell
             label="FD cycles"
             value={String(active.phases.length)}
