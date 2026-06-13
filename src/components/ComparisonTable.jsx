@@ -138,12 +138,27 @@ export default function ComparisonTable({ scenarioA, scenarioB }) {
           ))}
         </div>
       </div>
+      {/* Warning for perpetual Scenario A — numbers look absurd without context */}
+      {scenarioA.perpetual && (
+        <div className="mx-5 mt-4 mb-1 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5">
+          <span className="text-amber-500 flex-shrink-0 mt-0.5">⚠</span>
+          <p className="text-[11px] text-amber-800 leading-relaxed">
+            <span className="font-semibold">Scenario A numbers assume infinite time.</span>{' '}
+            Tax of ₹100s of crore and a corpus growing to ₹thousands of crore are mathematically correct
+            but <span className="font-semibold">not realistic</span> — they project forever on a fixed
+            nominal withdrawal that loses real value each year. Use Scenario B for retirement planning.
+          </p>
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border text-text-muted">
               <th className="text-left px-4 py-3 font-medium">Metric</th>
-              <th className="text-right px-4 py-3 font-medium text-accent-fd">A — Fixed</th>
+              <th className="text-right px-4 py-3 font-medium text-accent-fd">
+                A — Fixed{scenarioA.perpetual ? ' ⚠' : ''}
+              </th>
               <th className="text-right px-4 py-3 font-medium text-text-secondary">B — Inflation-Adj</th>
             </tr>
           </thead>

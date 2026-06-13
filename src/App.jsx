@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { DEFAULT_INPUTS, CURRENT_SBI_FD } from './logic/defaults'
 import { simulateAllPhases } from './logic/calculator'
-import { formatCompact } from './logic/formatters'
+import { formatCompact, formatDuration } from './logic/formatters'
 import InputPanel from './components/InputPanel'
 import ScenarioToggle from './components/ScenarioToggle'
 import ResultTabs from './components/ResultTabs'
@@ -122,6 +122,12 @@ function InlineWarnings({ inputs, result }) {
 // ─── Strategy modal ────────────────────────────────────────────────────────────
 
 function StrategyModal({ onClose }) {
+  useEffect(() => {
+    const handleKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
@@ -236,6 +242,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => window.print()}
+              title="Download PDF report (uses browser print)"
               className="h-8 px-3 flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary border border-border rounded-lg bg-card hover:bg-card-hover transition-colors"
             >
               <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
@@ -309,7 +316,10 @@ export default function App() {
               </button>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-3">
+            {/* Arrow centering: items-stretch makes arrows fill the step height;
+                pt-7 offsets past the title row (h-5=20px + gap-2=8px = 28px),
+                then items-center places the arrow at the vertical center of the box. */}
+            <div className="flex flex-col sm:flex-row sm:items-stretch gap-4 sm:gap-3">
 
               {/* Step 1 */}
               <div className="flex-1 flex flex-col gap-2 min-w-0">
@@ -318,22 +328,45 @@ export default function App() {
                   <span className="text-xs font-bold text-text-primary">Split your corpus</span>
                 </div>
                 <div className="bg-bg border border-border rounded-xl p-3 flex flex-col gap-2">
+                  {/* Dynamic split bar — width + label reflect actual fdPct */}
                   <div className="flex h-6 rounded-md overflow-hidden">
-                    <div className="bg-accent-fd flex-1 flex items-center justify-center">
-                      <span className="text-[9px] text-white font-semibold">FD 50%</span>
-                    </div>
-                    <div className="bg-accent-mf flex-1 flex items-center justify-center">
-                      <span className="text-[9px] text-white font-semibold">MF 50%</span>
-                    </div>
+                    {inputs.fdPct > 0 && (
+                      <div
+                        className="bg-accent-fd flex items-center justify-center"
+                        style={{ width: `${Math.round(inputs.fdPct * 100)}%` }}
+                      >
+                        {Math.round(inputs.fdPct * 100) >= 18 && (
+                          <span className="text-[9px] text-white font-semibold">FD {Math.round(inputs.fdPct * 100)}%</span>
+                        )}
+                      </div>
+                    )}
+                    {inputs.fdPct < 1 && (
+                      <div
+                        className="bg-accent-mf flex items-center justify-center"
+                        style={{ width: `${Math.round((1 - inputs.fdPct) * 100)}%` }}
+                      >
+                        {Math.round((1 - inputs.fdPct) * 100) >= 18 && (
+                          <span className="text-[9px] text-white font-semibold">MF {Math.round((1 - inputs.fdPct) * 100)}%</span>
+                        )}
+                      </div>
+                    )}
                   </div>
+                  {/* Corpus amounts — always show, with description below to match Step 2 & 3 card heights */}
+                  {inputs.totalCorpus > 0 && (
+                    <p className="text-[10px] text-text-muted leading-none">
+                      <span className="font-semibold text-accent-fd">{formatCompact(inputs.fdAmount)}</span> FD ·{' '}
+                      <span className="font-semibold text-accent-mf">{formatCompact(inputs.mfAmount)}</span> MF
+                    </p>
+                  )}
                   <p className="text-[11px] text-text-secondary leading-relaxed">
-                    <span className="font-semibold text-accent-fd">FD</span> = monthly income.{' '}
-                    <span className="font-semibold text-accent-mf">MF</span> = untouched growth engine. You decide the split.
+                    <span className="font-semibold text-accent-fd">FD</span> = stable monthly income.{' '}
+                    <span className="font-semibold text-accent-mf">MF</span> = untouched growth engine. You control the split.
                   </p>
                 </div>
               </div>
 
-              <div className="flex-shrink-0 text-text-muted font-bold text-base hidden sm:block">→</div>
+              {/* Desktop arrow — pt-7 offsets past title row, items-center centers in box height */}
+              <div className="flex-shrink-0 hidden sm:flex items-center pt-7 text-text-muted font-bold text-base">→</div>
               <div className="text-center text-text-muted font-bold text-base sm:hidden">↓</div>
 
               {/* Step 2 */}
@@ -343,14 +376,18 @@ export default function App() {
                   <span className="text-xs font-bold text-text-primary">Live off your FD</span>
                 </div>
                 <div className="bg-bg border border-border rounded-xl p-3 flex flex-col gap-2">
-                  <span className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-accent-fd/10 text-accent-fd border border-accent-fd/20 self-start">FD → ₹50K/mo to you</span>
+                  <span className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-accent-fd/10 text-accent-fd border border-accent-fd/20 self-start">
+                    FD {(debouncedInputs.fdStartRate * 100).toFixed(1)}% → {inputs.monthlyWithdrawal > 0 ? formatCompact(inputs.monthlyWithdrawal) : '₹X'}/mo to you
+                  </span>
                   <p className="text-[11px] text-text-secondary leading-relaxed">
-                    Withdraw from FD each month. MF compounds untouched at ~12% CAGR — <span className="font-medium">years of undisturbed growth.</span>
+                    Withdraw from FD each month. MF compounds untouched at{' '}
+                    <span className="font-medium">{(debouncedInputs.mfRate * 100).toFixed(0)}% CAGR</span>{' '}
+                    — years of undisturbed growth.
                   </p>
                 </div>
               </div>
 
-              <div className="flex-shrink-0 text-text-muted font-bold text-base hidden sm:block">→</div>
+              <div className="flex-shrink-0 hidden sm:flex items-center pt-7 text-text-muted font-bold text-base">→</div>
               <div className="text-center text-text-muted font-bold text-base sm:hidden">↓</div>
 
               {/* Step 3 */}
@@ -361,14 +398,35 @@ export default function App() {
                 </div>
                 <div className="bg-bg border border-border rounded-xl p-3 flex flex-col gap-2">
                   <div className="flex items-center gap-1 flex-wrap">
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-mf/10 text-accent-mf border border-accent-mf/20">Sell 50% MF</span>
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-mf/10 text-accent-mf border border-accent-mf/20">Sell MF</span>
                     <span className="text-text-muted text-xs">→</span>
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-tax/10 text-accent-tax border border-accent-tax/20">Pay LTCG</span>
+                    {debouncedInputs.ltcgEnabled ? (
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-tax/10 text-accent-tax border border-accent-tax/20">
+                        Pay LTCG {(debouncedInputs.ltcgRate * 100).toFixed(1)}%
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-border text-text-muted">
+                        No LTCG tax
+                      </span>
+                    )}
                     <span className="text-text-muted text-xs">→</span>
                     <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-fd/10 text-accent-fd border border-accent-fd/20">New FD</span>
                   </div>
                   <p className="text-[11px] text-text-secondary leading-relaxed">
-                    FD runs out in ~5–8 yrs. Sell MF → pay tax → open a new, <span className="font-medium">often bigger FD</span>.
+                    {result?.scenarioB?.phases?.[0]
+                      ? <>FD depletes in <span className="font-medium">{formatDuration(result.scenarioB.phases[0].fdMonths)}</span>.</>
+                      : 'FD runs out in ~5–8 yrs.'
+                    }{' '}
+                    Sell MF → pay tax → open a new,{' '}
+                    {result?.scenarioB?.phases?.[0] && result.scenarioB.phases[1]
+                      ? <span className="font-medium">
+                          {result.scenarioB.phases[1].fdPrincipal > result.scenarioB.phases[0].fdPrincipal
+                            ? 'often bigger'
+                            : 'next'}{' '}
+                          FD ({formatCompact(result.scenarioB.phases[1].fdPrincipal)})
+                        </span>
+                      : <span className="font-medium">new FD</span>
+                    }.
                   </p>
                 </div>
               </div>
@@ -401,7 +459,10 @@ export default function App() {
               <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
                 <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0 mt-1.5" />
                 <p className="text-[11px] text-red-700 leading-relaxed">
-                  <span className="font-semibold">Withdrawal too high</span> — each new FD is smaller. Money runs out in N years.
+                  <span className="font-semibold">Withdrawal too high</span> — each new FD is smaller. Money runs out
+                  {result && !result.scenarioB.perpetual && result.scenarioB.totalMonths
+                    ? ` in ${formatDuration(result.scenarioB.totalMonths)}.`
+                    : ' in finite time.'}
                 </p>
               </div>
               <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
@@ -569,7 +630,7 @@ export default function App() {
           <div>
             <h4 className="text-[11px] font-semibold text-text-secondary uppercase tracking-wide mb-2">Last updated</h4>
             <p className="text-[11px] leading-relaxed">
-              Tax rules as of Budget 2024 (LTCG 12.5% above ₹1.25L/yr). FD rate default reflects SBI {CURRENT_SBI_FD.tenure} as of {CURRENT_SBI_FD.asOf}.
+              Tax rules as of Budget 2024–25 (LTCG 12.5% above ₹1.25L/yr — unchanged in Budget 2025). FD rate default reflects SBI {CURRENT_SBI_FD.tenure} as of {CURRENT_SBI_FD.asOf}.
             </p>
           </div>
         </div>

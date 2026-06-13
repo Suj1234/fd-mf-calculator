@@ -1,4 +1,13 @@
+import { useState } from 'react'
 import { healthScore, withdrawalRate, swrZone } from '../logic/analysis'
+
+const GRADE_LEGEND = [
+  { letter: 'A', range: '85–100', label: 'Excellent', color: '#059669', desc: 'Corpus comfortably outlasts 30+ yr retirement' },
+  { letter: 'B', range: '70–84',  label: 'Good',      color: '#059669', desc: 'Minor tweaks can push this to Excellent' },
+  { letter: 'C', range: '55–69',  label: 'Moderate',  color: '#d97706', desc: 'Works, but limited buffer against rate drops' },
+  { letter: 'D', range: '40–54',  label: 'Weak',      color: '#ea580c', desc: 'Runs out before 25yr floor — manageable with cuts' },
+  { letter: 'E', range: '0–39',   label: 'Critical',  color: '#dc2626', desc: 'Corpus depletes quickly — needs major changes' },
+]
 
 function Gauge({ score, color }) {
   const r = 42
@@ -20,6 +29,7 @@ function Gauge({ score, color }) {
 }
 
 export default function HealthScore({ inputs, result }) {
+  const [showLegend, setShowLegend] = useState(false)
   const hs = healthScore(inputs, result)
   const rate = withdrawalRate(inputs)
   const swr = swrZone(rate)
@@ -40,6 +50,13 @@ export default function HealthScore({ inputs, result }) {
             >
               Grade {hs.letter}
             </span>
+            <button
+              type="button"
+              onClick={() => setShowLegend((v) => !v)}
+              className="text-[10px] text-text-muted/70 hover:text-text-secondary underline decoration-dotted transition-colors"
+            >
+              {showLegend ? 'hide scale' : 'what does this mean?'}
+            </button>
           </div>
           <p className="text-xs text-text-muted mt-0.5">{hs.description}</p>
 
@@ -79,6 +96,33 @@ export default function HealthScore({ inputs, result }) {
           </div>
         ))}
       </div>
+
+      {/* Grade legend — shown on demand */}
+      {showLegend && (
+        <div className="mt-3 border-t border-border pt-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-text-muted mb-2">Grade scale</p>
+          <div className="flex flex-col gap-1">
+            {GRADE_LEGEND.map((g) => (
+              <div
+                key={g.letter}
+                className={`flex items-start gap-2 rounded-lg px-2.5 py-1.5 ${hs.letter === g.letter ? 'bg-bg' : ''}`}
+              >
+                <span
+                  className="text-[10px] font-bold text-white rounded px-1 py-0.5 leading-none flex-shrink-0 mt-0.5"
+                  style={{ backgroundColor: g.color }}
+                >
+                  {g.letter}
+                </span>
+                <span className="text-[10px] text-text-muted num flex-shrink-0">{g.range}</span>
+                <span className="text-[10px] text-text-secondary leading-tight">{g.desc}</span>
+                {hs.letter === g.letter && (
+                  <span className="text-[9px] font-semibold text-text-muted ml-auto flex-shrink-0">← you</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
