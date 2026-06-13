@@ -99,8 +99,20 @@ export default function ComparisonTable({ scenarioA, scenarioB }) {
     },
   ]
 
+  const aDur = scenarioA.perpetual ? 'forever (on paper)' : formatDuration(scenarioA.totalMonths)
+  const bDur = scenarioB.perpetual ? 'forever' : formatDuration(scenarioB.totalMonths)
+
   return (
     <div className="bg-card rounded-xl border border-border overflow-hidden">
+      {/* Recommendation summary (P17) */}
+      <div className="px-5 py-3.5 bg-accent-mf/[0.06] border-b border-accent-mf/20">
+        <p className="text-xs text-text-secondary leading-relaxed">
+          <span className="font-semibold text-accent-mf">📌 Scenario B (Inflation-Adjusted) is the realistic plan.</span>{' '}
+          Scenario A lasts {aDur}, but that longevity is an illusion — the same fixed ₹ buys less every year, so
+          your real lifestyle quietly collapses. Scenario B lasts {bDur} while
+          <span className="font-medium"> keeping your spending power intact</span> — compare the “today's ₹” rows below.
+        </p>
+      </div>
       <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold text-text-primary">A vs B Comparison</h3>

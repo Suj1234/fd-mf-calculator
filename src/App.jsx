@@ -1,11 +1,17 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
-import { DEFAULT_INPUTS } from './logic/defaults'
+import { DEFAULT_INPUTS, CURRENT_SBI_FD } from './logic/defaults'
 import { simulateAllPhases } from './logic/calculator'
 import { formatCompact } from './logic/formatters'
 import InputPanel from './components/InputPanel'
+import ScenarioToggle from './components/ScenarioToggle'
+import ResultTabs from './components/ResultTabs'
 import HeroSummary from './components/HeroSummary'
+import HealthScore from './components/HealthScore'
+import RunwayTips from './components/RunwayTips'
+import WhatIf from './components/WhatIf'
 import PhaseTimeline from './components/PhaseTimeline'
-import PhaseCard from './components/PhaseCard'
+import PhaseCardList from './components/PhaseCardList'
+import Term from './components/Term'
 import TaxSummary from './components/TaxSummary'
 import ComparisonTable from './components/ComparisonTable'
 import StrategyExplainer from './components/StrategyExplainer'
@@ -22,7 +28,7 @@ function parseFromURL() {
   const fpct = params.get('fpct')
   if (tc !== null) {
     overrides.totalCorpus = parseFloat(tc)
-    overrides.fdPct = fpct !== null ? Math.min(0.8, Math.max(0.2, parseFloat(fpct))) : 0.5
+    overrides.fdPct = fpct !== null ? Math.min(1, Math.max(0, parseFloat(fpct))) : 0.5
     overrides.fdAmount = Math.round(overrides.totalCorpus * overrides.fdPct)
     overrides.mfAmount = Math.round(overrides.totalCorpus * (1 - overrides.fdPct))
   } else {
@@ -36,7 +42,7 @@ function parseFromURL() {
       overrides.mfAmount = mfVal
       overrides.totalCorpus = fdVal + mfVal
       overrides.fdPct = overrides.totalCorpus > 0
-        ? Math.min(0.8, Math.max(0.2, fdVal / overrides.totalCorpus))
+        ? Math.min(1, Math.max(0, fdVal / overrides.totalCorpus))
         : 0.5
     }
   }
@@ -113,33 +119,6 @@ function InlineWarnings({ inputs, result }) {
   )
 }
 
-// ─── More Details (Tax + Comparison, collapsed) ────────────────────────────────
-
-function MoreDetails({ scenarioA, scenarioB, phases, perpetual }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div className="rounded-xl border border-border overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-card-hover transition-colors bg-card"
-      >
-        <div>
-          <span className="text-xs font-semibold text-text-secondary">Tax breakdown &amp; A vs B comparison</span>
-          {!open && <p className="text-[10px] text-text-muted mt-0.5">Full tax table and side-by-side scenario comparison</p>}
-        </div>
-        <span className="text-text-muted text-base flex-shrink-0 ml-3">{open ? '−' : '+'}</span>
-      </button>
-      {open && (
-        <div className="flex flex-col gap-4 p-4 border-t border-border bg-bg">
-          <TaxSummary phases={phases} perpetual={perpetual} />
-          <ComparisonTable scenarioA={scenarioA} scenarioB={scenarioB} />
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ─── Strategy modal ────────────────────────────────────────────────────────────
 
 function StrategyModal({ onClose }) {
@@ -197,7 +176,14 @@ export default function App() {
   const [activeScenario, setActiveScenario] = useState('B')
   const [copied, setCopied] = useState(false)
   const [showStrategy, setShowStrategy] = useState(false)
+  const [activeTab, setActiveTab] = useState('summary')
   const debounceTimer = useRef(null)
+  const resultsTopRef = useRef(null)
+
+  const goToTax = useCallback(() => {
+    setActiveTab('tax')
+    setTimeout(() => resultsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60)
+  }, [])
 
   useEffect(() => {
     clearTimeout(debounceTimer.current)
@@ -245,8 +231,19 @@ export default function App() {
             </div>
           </div>
 
-          {/* Share button */}
-          <div className="relative">
+          {/* Actions */}
+          <div className="relative flex items-center gap-2 no-print">
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="h-8 px-3 flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary border border-border rounded-lg bg-card hover:bg-card-hover transition-colors"
+            >
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                <path d="M8 1v8m0 0L5 6m3 3l3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M2 11v3a1 1 0 001 1h10a1 1 0 001-1v-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+              </svg>
+              Report
+            </button>
             <button
               type="button"
               onClick={copyShareLink}
@@ -273,18 +270,141 @@ export default function App() {
       {/* ── Body ── */}
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6">
 
-        {/* Hero statement banner */}
-        <div className="mb-5 bg-card border border-border rounded-xl px-5 py-3.5 flex items-center justify-between gap-4 shadow-card">
-          <p className="text-sm text-text-secondary leading-relaxed">
-            Most Indian retirees split savings between FDs and Mutual Funds. This calculator shows exactly how long that lasts — after inflation, falling FD rates, and LTCG tax.
+        {/* Print-only report header */}
+        <div className="print-only" style={{ marginBottom: '16px', borderBottom: '1px solid #dce3f0', paddingBottom: '10px' }}>
+          <h1 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>FD + MF Withdrawal — Retirement Report</h1>
+          <p style={{ fontSize: '11px', color: '#334155', marginTop: '4px' }}>
+            Generated {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+            {' · '}Corpus {formatCompact(debouncedInputs.totalCorpus)} ({Math.round(debouncedInputs.fdPct * 100)}% FD / {Math.round((1 - debouncedInputs.fdPct) * 100)}% MF)
+            {' · '}Withdrawal {formatCompact(debouncedInputs.monthlyWithdrawal)}/mo
+            {debouncedInputs.currentAge > 0 ? ` · Age ${debouncedInputs.currentAge}` : ''}
+            {' · '}Tax slab {Math.round(debouncedInputs.taxSlab * 100)}%
           </p>
-          <button
-            type="button"
-            onClick={() => setShowStrategy(true)}
-            className="flex-shrink-0 h-8 px-3 flex items-center gap-1.5 text-xs text-accent-fd hover:text-accent-fd/80 border border-accent-fd/30 bg-accent-fd/5 rounded-lg hover:bg-accent-fd/10 transition-colors font-medium"
-          >
-            How it works →
-          </button>
+        </div>
+
+        {/* Hero — explains the novel FD+MF cycling concept before user touches any input */}
+        <div className="mb-6 bg-card border border-border rounded-2xl shadow-card overflow-hidden">
+
+          {/* Headline */}
+          <div className="px-6 pt-5 pb-4 border-b border-border">
+            <h2 className="text-xl font-bold text-text-primary leading-snug">
+              How long will your FD + MF savings last in retirement?
+            </h2>
+            <p className="text-sm text-text-secondary mt-1.5 leading-relaxed">
+              Most retirees split savings between FD and Mutual Funds — but never calculate how long it actually lasts
+              after inflation, LTCG tax, and falling FD rates. This tool does exactly that.
+            </p>
+          </div>
+
+          {/* 3-step visual flow */}
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">How the strategy works</p>
+              <button
+                type="button"
+                onClick={() => setShowStrategy(true)}
+                className="no-print text-xs text-accent-fd hover:underline font-medium"
+              >
+                Full explanation →
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3">
+
+              {/* Step 1 */}
+              <div className="flex-1 flex flex-col gap-2 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-accent-fd text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">1</span>
+                  <span className="text-xs font-bold text-text-primary">Split your corpus</span>
+                </div>
+                <div className="bg-bg border border-border rounded-xl p-3 flex flex-col gap-2">
+                  <div className="flex h-6 rounded-md overflow-hidden">
+                    <div className="bg-accent-fd flex-1 flex items-center justify-center">
+                      <span className="text-[9px] text-white font-semibold">FD 50%</span>
+                    </div>
+                    <div className="bg-accent-mf flex-1 flex items-center justify-center">
+                      <span className="text-[9px] text-white font-semibold">MF 50%</span>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-text-secondary leading-relaxed">
+                    <span className="font-semibold text-accent-fd">FD</span> = monthly income.{' '}
+                    <span className="font-semibold text-accent-mf">MF</span> = untouched growth engine. You decide the split.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex-shrink-0 text-text-muted font-bold text-base">→</div>
+
+              {/* Step 2 */}
+              <div className="flex-1 flex flex-col gap-2 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-accent-mf text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">2</span>
+                  <span className="text-xs font-bold text-text-primary">Live off your FD</span>
+                </div>
+                <div className="bg-bg border border-border rounded-xl p-3 flex flex-col gap-2">
+                  <span className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-accent-fd/10 text-accent-fd border border-accent-fd/20 self-start">FD → ₹50K/mo to you</span>
+                  <p className="text-[11px] text-text-secondary leading-relaxed">
+                    Withdraw from FD each month. MF compounds untouched at ~12% CAGR — <span className="font-medium">years of undisturbed growth.</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex-shrink-0 text-text-muted font-bold text-base">→</div>
+
+              {/* Step 3 */}
+              <div className="flex-1 flex flex-col gap-2 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-accent-fd text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">3</span>
+                  <span className="text-xs font-bold text-text-primary">Refill FD from MF</span>
+                </div>
+                <div className="bg-bg border border-border rounded-xl p-3 flex flex-col gap-2">
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-mf/10 text-accent-mf border border-accent-mf/20">Sell 50% MF</span>
+                    <span className="text-text-muted text-xs">→</span>
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-tax/10 text-accent-tax border border-accent-tax/20">Pay LTCG</span>
+                    <span className="text-text-muted text-xs">→</span>
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-fd/10 text-accent-fd border border-accent-fd/20">New FD</span>
+                  </div>
+                  <p className="text-[11px] text-text-secondary leading-relaxed">
+                    FD runs out in ~5–8 yrs. Sell MF → pay tax → open a new, <span className="font-medium">often bigger FD</span>.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Loop-back: U-bracket showing Step 3 feeds back into Step 2 */}
+            <div className="flex gap-3 mt-1">
+              {/* Empty placeholder covering Step 1 + arrow */}
+              <div className="flex-1" />
+              <div className="w-4 flex-shrink-0" />
+              {/* U-bracket spanning Steps 2 and 3 */}
+              <div className="flex-1" style={{ flex: '2 1 0%' }}>
+                <div className="flex justify-between px-1 mb-0.5">
+                  <span className="text-[9px] font-semibold text-accent-mf">↑ New FD opens</span>
+                  <span className="text-[9px] text-text-muted">FD runs out ↓</span>
+                </div>
+                <div className="border-l-2 border-b-2 border-r-2 border-dashed border-accent-mf/35 rounded-b-xl h-3" />
+                <p className="text-center text-[10px] font-semibold text-accent-mf mt-1.5">↺ Sell % of MF → pay LTCG tax → open new FD → withdraw monthly → leave rest of MF untouched. Repeat.</p>
+              </div>
+            </div>
+
+            {/* Two outcomes */}
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
+                <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0 mt-1.5" />
+                <p className="text-[11px] text-red-700 leading-relaxed">
+                  <span className="font-semibold">Withdrawal too high</span> — each new FD is smaller. Money runs out in N years.
+                </p>
+              </div>
+              <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
+                <span className="text-accent-mf text-sm flex-shrink-0 leading-none mt-0.5">∞</span>
+                <p className="text-[11px] text-emerald-700 leading-relaxed">
+                  <span className="font-semibold">Withdrawal sustainable</span> — FD grows each cycle until interest alone covers expenses forever.
+                </p>
+              </div>
+            </div>
+
+          </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
@@ -301,92 +421,103 @@ export default function App() {
             {!result ? (
               <EmptyState />
             ) : (
-              <div className="fade-in flex flex-col gap-4">
+              <div className="fade-in flex flex-col gap-5">
 
-                {/* Inline strategy summary — always visible */}
-                <div className="bg-card border border-border rounded-2xl px-4 py-3 shadow-card">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-0.5 flex flex-col items-center gap-1">
-                      <div className="w-2 h-2 rounded-full bg-accent-fd" />
-                      <div className="w-px h-4 bg-border" />
-                      <div className="w-2 h-2 rounded-full bg-accent-mf" />
-                      <div className="w-px h-4 bg-border" />
-                      <div className="w-2 h-2 rounded-full bg-accent-fd opacity-60" />
-                    </div>
-                    <div className="flex flex-col gap-1.5 min-w-0">
-                      <div className="text-xs text-text-secondary leading-relaxed">
-                        <span className="font-semibold text-accent-fd">Step 1 — Use your FD.</span>{' '}
-                        Your FD pays monthly interest. You withdraw from it each month (interest + principal as needed) until it runs out.
-                      </div>
-                      <div className="text-xs text-text-secondary leading-relaxed">
-                        <span className="font-semibold text-accent-mf">Meanwhile — MF compounds.</span>{' '}
-                        Your Mutual Fund grows untouched at ~{(debouncedInputs.mfRate * 100).toFixed(0)}% CAGR while you live off the FD.
-                      </div>
-                      <div className="text-xs text-text-secondary leading-relaxed">
-                        <span className="font-semibold text-accent-fd">When FD runs out → new cycle.</span>{' '}
-                        Sell 50% of your MF → pay LTCG tax → put proceeds into a new FD. Repeat.
-                        Each colored block in the timeline below = one such cycle.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Scenario tabs + hero result card */}
-                <HeroSummary
+                {/* Global scenario toggle — drives every tab */}
+                <ScenarioToggle
                   scenarioA={result.scenarioA}
                   scenarioB={result.scenarioB}
                   activeScenario={activeScenario}
                   onScenarioChange={setActiveScenario}
-                  currentAge={debouncedInputs.currentAge}
                   monthlyWithdrawal={debouncedInputs.monthlyWithdrawal}
                   inflationRate={debouncedInputs.inflationRate}
                 />
 
-                {/* Subtle inline notes */}
-                <InlineWarnings inputs={debouncedInputs} result={result} />
-
-                {activeResult && (
-                  <>
-                    {/* Lifecycle timeline */}
-                    <div className="bg-card border border-border rounded-xl px-5 py-4">
-                      <PhaseTimeline
-                        phases={activeResult.phases}
-                        perpetual={activeResult.perpetual}
-                      />
-                    </div>
-
-                    {/* Phase cards */}
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center justify-between px-1">
-                        <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-                          FD Cycles
-                          <span className="ml-2 font-normal normal-case tracking-normal text-text-muted">
-                            — click any cycle to expand month-by-month detail
-                          </span>
-                        </h3>
-                        <span className="text-[10px] text-text-muted">
-                          {activeScenario === 'A' ? 'Fixed Withdrawal' : 'Inflation-Adjusted'}
-                        </span>
-                      </div>
-                      {activeResult.phases.map((phase, i) => (
-                        <PhaseCard
-                          key={`${activeScenario}-${i}`}
-                          phase={phase}
-                          index={i}
-                          baseWithdrawal={debouncedInputs.monthlyWithdrawal}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Tax + Comparison — behind a toggle */}
-                    <MoreDetails
-                      scenarioA={result.scenarioA}
-                      scenarioB={result.scenarioB}
-                      phases={activeResult.phases}
-                      perpetual={activeResult.perpetual}
-                    />
-                  </>
-                )}
+                {/* Tabbed results (Problem 2) */}
+                <div ref={resultsTopRef} className="scroll-mt-16">
+                  <ResultTabs
+                    active={activeTab}
+                    onChange={setActiveTab}
+                    tabs={[
+                      {
+                        key: 'summary', icon: '📊', label: 'Summary', printTitle: 'Summary',
+                        content: (
+                          <div className="flex flex-col gap-5">
+                            <HeroSummary
+                              scenarioA={result.scenarioA}
+                              scenarioB={result.scenarioB}
+                              activeScenario={activeScenario}
+                              currentAge={debouncedInputs.currentAge}
+                              monthlyWithdrawal={debouncedInputs.monthlyWithdrawal}
+                              inflationRate={debouncedInputs.inflationRate}
+                            />
+                            <InlineWarnings inputs={debouncedInputs} result={result} />
+                            {activeResult && activeResult.totalTax > 0 && (
+                              <button
+                                type="button"
+                                onClick={goToTax}
+                                className="no-print flex items-start gap-2 text-left bg-accent-fd/[0.06] border border-accent-fd/20 rounded-xl px-4 py-2.5 hover:bg-accent-fd/10 transition-colors"
+                              >
+                                <span className="flex-shrink-0 text-sm">💡</span>
+                                <p className="text-xs text-text-secondary leading-relaxed">
+                                  <span className="font-semibold text-text-primary">
+                                    {Math.round((activeResult.totalLTCG / activeResult.totalTax) * 100)}% of your {formatCompact(activeResult.totalTax)} tax is LTCG
+                                  </span>{' '}
+                                  — paid each time you sell MF to refill the FD.{' '}
+                                  <span className="text-accent-fd font-medium">See full breakdown →</span>
+                                </p>
+                              </button>
+                            )}
+                            <HealthScore inputs={debouncedInputs} result={result} />
+                            <RunwayTips inputs={debouncedInputs} result={result} />
+                            <div className="no-print">
+                              <WhatIf inputs={debouncedInputs} baselineResult={result} />
+                            </div>
+                          </div>
+                        ),
+                      },
+                      {
+                        key: 'timeline', icon: '📅', label: 'Timeline', printTitle: 'Lifecycle & FD cycles',
+                        content: activeResult ? (
+                          <div className="flex flex-col gap-5">
+                            <div className="bg-card border border-border rounded-xl px-5 py-4">
+                              <PhaseTimeline
+                                phases={activeResult.phases}
+                                perpetual={activeResult.perpetual}
+                                currentAge={debouncedInputs.currentAge}
+                              />
+                            </div>
+                            <div className="flex flex-col gap-2.5">
+                              <div className="flex items-end justify-between px-1">
+                                <div>
+                                  <h3 className="text-sm font-semibold text-text-primary">FD Cycles</h3>
+                                  <p className="text-[11px] text-text-muted mt-0.5">Click any cycle to expand month-by-month detail</p>
+                                </div>
+                                <span className="text-[10px] text-text-muted">
+                                  {activeScenario === 'A' ? 'Fixed Withdrawal' : 'Inflation-Adjusted'}
+                                </span>
+                              </div>
+                              <PhaseCardList
+                                phases={activeResult.phases}
+                                baseWithdrawal={debouncedInputs.monthlyWithdrawal}
+                                scenarioKey={activeScenario}
+                              />
+                            </div>
+                          </div>
+                        ) : null,
+                      },
+                      {
+                        key: 'tax', icon: '💰', label: 'Tax', printTitle: 'Tax & comparison',
+                        content: activeResult ? (
+                          <div className="flex flex-col gap-4">
+                            <TaxSummary phases={activeResult.phases} perpetual={activeResult.perpetual} />
+                            <ComparisonTable scenarioA={result.scenarioA} scenarioB={result.scenarioB} />
+                          </div>
+                        ) : null,
+                      },
+                    ]}
+                  />
+                </div>
               </div>
             )}
           </main>
@@ -394,11 +525,30 @@ export default function App() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-border mt-8 py-5">
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 text-[10px] text-text-muted text-center leading-relaxed">
-          For planning purposes only · Assumes no SIP, no partial redemptions, no FD laddering ·
-          Tax laws, FD rates, and MF returns change over time ·
-          Consult a SEBI-registered advisor before making investment decisions.
+      <footer className="border-t border-border mt-8 py-6">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 grid gap-5 sm:grid-cols-3 text-text-muted">
+          <div>
+            <h4 className="text-[11px] font-semibold text-text-secondary uppercase tracking-wide mb-2">What this model assumes</h4>
+            <ul className="text-[11px] leading-relaxed space-y-1 list-disc list-inside marker:text-text-muted/50">
+              <li>No SIP or fresh investment after retirement</li>
+              <li>No partial MF redemptions or FD laddering</li>
+              <li>MF is sold only at the end of each FD cycle</li>
+              <li>Return &amp; inflation rates held constant (long-run averages)</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-[11px] font-semibold text-text-secondary uppercase tracking-wide mb-2">Disclaimer</h4>
+            <p className="text-[11px] leading-relaxed">
+              For planning and education only — not investment advice. Tax laws, FD rates and market
+              returns change over time. Consult a SEBI-registered advisor before making any investment decision.
+            </p>
+          </div>
+          <div>
+            <h4 className="text-[11px] font-semibold text-text-secondary uppercase tracking-wide mb-2">Last updated</h4>
+            <p className="text-[11px] leading-relaxed">
+              Tax rules as of Budget 2024 (LTCG 12.5% above ₹1.25L/yr). FD rate default reflects SBI {CURRENT_SBI_FD.tenure} as of {CURRENT_SBI_FD.asOf}.
+            </p>
+          </div>
         </div>
       </footer>
 

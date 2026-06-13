@@ -1,4 +1,5 @@
 import { formatCompact } from '../logic/formatters'
+import Term from './Term'
 
 export default function TaxSummary({ phases, perpetual }) {
   const totalFDTax = phases.reduce((s, p) => s + p.totalFDTax, 0)
@@ -22,7 +23,7 @@ export default function TaxSummary({ phases, perpetual }) {
       <div className="px-5 py-4 border-b border-border">
         <h3 className="text-sm font-semibold text-text-primary">Tax Summary</h3>
         <p className="text-xs text-text-muted mt-0.5">
-          FD interest tax (each phase) + LTCG tax paid when switching from MF to a new FD at end of each cycle
+          FD interest tax (each phase) + <Term k="ltcg">LTCG</Term> tax paid when switching from MF to a new FD at end of each cycle
         </p>
       </div>
 

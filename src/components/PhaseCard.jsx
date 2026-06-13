@@ -1,11 +1,7 @@
 import { useState } from 'react'
-import { formatCompact, formatINR, formatDuration } from '../logic/formatters'
+import { formatCompact, formatDuration } from '../logic/formatters'
+import { phaseHealthColor } from '../logic/colors'
 import MonthTable from './MonthTable'
-
-const PHASE_COLORS = [
-  '#7c83f5', '#34d399', '#fbbf24', '#22d3ee', '#a78bfa',
-  '#fb923c', '#f472b6', '#2dd4bf', '#a3e635', '#818cf8',
-]
 
 function Chip({ label, value, valueClass = 'text-text-secondary' }) {
   return (
@@ -16,15 +12,11 @@ function Chip({ label, value, valueClass = 'text-text-secondary' }) {
   )
 }
 
-export default function PhaseCard({ phase, baseWithdrawal, index }) {
+export default function PhaseCard({ phase, baseWithdrawal }) {
   const [expanded, setExpanded] = useState(false)
-  const color = PHASE_COLORS[index % PHASE_COLORS.length]
-
-  const firstRealWd = !phase.perpetual && phase.rows && phase.rows.length > 0
-    ? phase.rows[0].realWd
-    : baseWithdrawal
-  const endPct   = firstRealWd > 0 ? phase.lastRealWd / firstRealWd : 1
-  const barColor = endPct >= 0.8 ? '#34d399' : endPct >= 0.5 ? '#fbbf24' : '#f87171'
+  // Health-based color (green=long → red=short) — same scale as the timeline,
+  // so a cycle's badge, border and timeline block all read the same.
+  const color = phaseHealthColor(phase.fdMonths, phase.perpetual)
 
   // Only show FD rate badge if the rate actually declined during this cycle
   const fdRateDropped = !phase.perpetual && phase.fdRateEnd < phase.fdRateStart
@@ -32,7 +24,7 @@ export default function PhaseCard({ phase, baseWithdrawal, index }) {
   return (
     <div
       className="bg-card rounded-2xl border overflow-hidden transition-colors shadow-card"
-      style={{ borderColor: color + '40' }}
+      style={{ borderColor: color + '40', borderLeft: `3px solid ${color}` }}
     >
       {/* Header row — always visible */}
       <button
@@ -77,27 +69,17 @@ export default function PhaseCard({ phase, baseWithdrawal, index }) {
             <Chip label="MF at end"  value={phase.perpetual ? '∞' : formatCompact(phase.mfEndNominal)} valueClass="text-accent-mf" />
           </div>
 
-          {/* Purchasing power bar */}
-          <div className="mt-3">
-            <div className="flex justify-between text-[10px] text-text-muted mb-1">
-              <span>
-                Inflation erodes your{' '}
-                <span className="font-medium text-text-secondary">{formatCompact(baseWithdrawal)}/mo</span>
-                {' '}to{' '}
-                <span className="font-medium text-text-secondary">{formatCompact(phase.lastRealWd)} buying power</span>
-                {' '}by this phase's end
-              </span>
-              <span className="font-medium" style={{ color: barColor }}>
-                {(endPct * 100).toFixed(0)}% of phase-start value
-              </span>
+          {/* Why FD ≠ MF at start — LTCG tax explanation */}
+          {phase.incomingLtcgTax > 0 && (
+            <div className="mt-2 flex items-start gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <span className="text-amber-500 text-xs flex-shrink-0 mt-px">ℹ</span>
+              <p className="text-[11px] text-amber-800 leading-relaxed">
+                FD opened (<span className="font-semibold">{formatCompact(phase.fdPrincipal)}</span>) is less than MF at start (<span className="font-semibold">{formatCompact(phase.mfStart)}</span>) because{' '}
+                <span className="font-semibold">{formatCompact(phase.incomingLtcgTax)}</span> LTCG tax was deducted when selling MF to fund this FD.
+              </p>
             </div>
-            <div className="h-1 bg-border rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full"
-                style={{ width: `${Math.min(100, endPct * 100)}%`, backgroundColor: barColor }}
-              />
-            </div>
-          </div>
+          )}
+
         </div>
 
         {/* Expand toggle with label */}
