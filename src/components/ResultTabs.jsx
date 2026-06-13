@@ -23,11 +23,19 @@ export default function ResultTabs({ active, onChange, tabs, activeScenario }) {
             </button>
           )
         })}
-        {/* Active scenario pill — visible when ScenarioToggle has scrolled out of view */}
+        {/* Active scenario indicator — shows which scenario is active when ScenarioToggle has scrolled out of view */}
         {activeScenario && (
-          <div className="flex-shrink-0 flex items-center px-2 ml-0.5 border-l border-border/60">
-            <span className="text-[10px] font-bold text-text-muted whitespace-nowrap">
-              {activeScenario === 'B' ? '★ B' : 'A'}
+          <div className="flex-shrink-0 flex items-center gap-1.5 pl-2.5 ml-0.5 border-l border-border/60 cursor-default select-none">
+            <span className="text-[9px] text-text-muted/50 uppercase tracking-wide hidden sm:inline flex-shrink-0">Viewing:</span>
+            <span
+              className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg whitespace-nowrap ${
+                activeScenario === 'B'
+                  ? 'bg-accent-mf/15 text-accent-mf'
+                  : 'bg-accent-fd/15 text-accent-fd'
+              }`}
+              title={activeScenario === 'B' ? 'Inflation-Adjusted: withdrawal rises with inflation each year (recommended)' : 'Fixed Withdrawal: same rupee amount every month'}
+            >
+              {activeScenario === 'B' ? '★ Inflation-Adj' : 'Fixed WD'}
             </span>
           </div>
         )}

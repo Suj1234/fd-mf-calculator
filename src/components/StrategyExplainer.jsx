@@ -143,7 +143,7 @@ export default function StrategyExplainer() {
         <SectionTitle>Two possible outcomes — depending on your withdrawal rate</SectionTitle>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-            <div className="text-xs font-semibold text-red-800 mb-1">Money runs out in N years</div>
+            <div className="text-xs font-semibold text-red-800 mb-1">Money eventually runs out</div>
             <p className="text-xs text-red-700 leading-relaxed">
               If you're withdrawing too much relative to your corpus, each new FD is smaller than the last.
               Eventually MF is too small to refill a meaningful FD — the money runs out.

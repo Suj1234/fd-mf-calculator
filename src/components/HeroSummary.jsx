@@ -2,7 +2,7 @@ import { formatCompact, formatDuration } from '../logic/formatters'
 
 // ─── Benchmark band ────────────────────────────────────────────────────────────
 
-function BenchmarkBand({ totalMonths, perpetual }) {
+function BenchmarkBand({ totalMonths, perpetual, currentAge }) {
   const MAX_MONTHS = 480 // 40 years caps the bar
   const rawPos = perpetual ? 99 : (totalMonths / MAX_MONTHS) * 100
   const markerPos = Math.min(99, Math.max(1, rawPos))
@@ -10,6 +10,10 @@ function BenchmarkBand({ totalMonths, perpetual }) {
   const zone = (perpetual || totalMonths >= 300) ? 'Healthy'
     : totalMonths >= 180 ? 'Moderate'
     : 'Caution'
+
+  // Absolute age labels at zone transitions (only when user entered an age)
+  const ageAt15yr = currentAge > 0 ? currentAge + 15 : null
+  const ageAt25yr = currentAge > 0 ? currentAge + 25 : null
 
   return (
     <div className="px-6 pb-6 pt-1">
@@ -37,19 +41,19 @@ function BenchmarkBand({ totalMonths, perpetual }) {
         />
       </div>
 
-      {/* Zone labels */}
+      {/* Zone labels with age tick marks */}
       <div className="flex mt-1.5">
         <div className="text-center" style={{ width: '37.5%' }}>
           <div className={`text-[9px] font-semibold ${zone === 'Caution' ? 'text-red-500' : 'text-red-400'}`}>Caution</div>
-          <div className="text-[9px] text-text-muted">0–15 yr</div>
+          <div className="text-[9px] text-text-muted">0–15 yr{ageAt15yr ? ` · to age ${ageAt15yr}` : ''}</div>
         </div>
         <div className="text-center" style={{ width: '25%' }}>
           <div className={`text-[9px] font-semibold ${zone === 'Moderate' ? 'text-amber-500' : 'text-amber-400'}`}>Moderate</div>
-          <div className="text-[9px] text-text-muted">15–25 yr</div>
+          <div className="text-[9px] text-text-muted">15–25 yr{ageAt25yr ? ` · to ${ageAt25yr}` : ''}</div>
         </div>
         <div className="text-center" style={{ width: '37.5%' }}>
           <div className={`text-[9px] font-semibold ${zone === 'Healthy' ? 'text-emerald-600' : 'text-emerald-400'}`}>Healthy</div>
-          <div className="text-[9px] text-text-muted">25+ yr</div>
+          <div className="text-[9px] text-text-muted">25+ yr{ageAt25yr ? ` · age ${ageAt25yr}+` : ''}</div>
         </div>
       </div>
     </div>
@@ -150,10 +154,10 @@ export default function HeroSummary({ scenarioA, scenarioB, activeScenario, curr
 
         {/* Benchmark band (non-perpetual only) */}
         {!perpetual && active.totalMonths && (
-          <BenchmarkBand totalMonths={active.totalMonths} perpetual={false} />
+          <BenchmarkBand totalMonths={active.totalMonths} perpetual={false} currentAge={currentAge} />
         )}
         {perpetual && (
-          <BenchmarkBand totalMonths={active.totalMonths} perpetual={true} />
+          <BenchmarkBand totalMonths={active.totalMonths} perpetual={true} currentAge={currentAge} />
         )}
 
         {/* Stats — colors carry honest meaning (P15) */}
@@ -183,7 +187,11 @@ export default function HeroSummary({ scenarioA, scenarioB, activeScenario, curr
           <StatCell
             label="FD cycles"
             value={String(active.phases.length)}
-            sub={perpetual ? 'last is perpetual' : undefined}
+            sub={perpetual
+              ? 'last cycle self-sustaining'
+              : active.phases.length >= 8
+                ? '↑ many cycles: drawing principal'
+                : 'sustainable withdrawal pace'}
           />
         </div>
       </div>

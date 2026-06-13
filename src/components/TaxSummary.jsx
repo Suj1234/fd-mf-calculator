@@ -19,7 +19,7 @@ export default function TaxSummary({ phases, perpetual }) {
   const minorTotal = minorPhases.reduce((s, p) => s + p.totalFDTax + (p.ltcgTax || 0), 0)
 
   return (
-    <div className="bg-card rounded-xl border border-border overflow-hidden">
+    <div className="bg-card rounded-xl border border-border">
       <div className="px-5 py-4 border-b border-border">
         <h3 className="text-sm font-semibold text-text-primary">Tax Summary</h3>
         <p className="text-xs text-text-muted mt-0.5">
@@ -33,7 +33,7 @@ export default function TaxSummary({ phases, perpetual }) {
           <p className="text-xs text-text-secondary leading-relaxed">
             <span className="font-semibold">Insight:</span>{' '}
             Of your total {formatCompact(totalTax)} tax, {ltcgPct}% is LTCG (from MF redemption) and {fdPct}% is FD interest tax.
-            {ltcgPct > 50 && ' Disabling LTCG (in Advanced Settings) will significantly extend your runway.'}
+            {ltcgPct > 50 && ' Disabling LTCG (in Tax, Age & Rates settings above) will significantly extend your runway.'}
           </p>
           {perpetual && (
             <p className="text-[10px] text-text-muted mt-1.5">

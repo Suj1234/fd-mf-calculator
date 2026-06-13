@@ -55,8 +55,11 @@ export default function PhaseCard({ phase, baseWithdrawal }) {
               </span>
             )}
             {fdRateDropped && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-border text-text-muted">
-                FD rate fell during cycle
+              <span
+                className="text-[10px] px-1.5 py-0.5 rounded bg-border text-text-muted cursor-help"
+                title={`FD rate declined from ${(phase.fdRateStart * 100).toFixed(1)}% to ${(phase.fdRateEnd * 100).toFixed(1)}% during this cycle — modelled per the FD rate decline setting (rates fell ~2% over 15 yrs historically). Interest earned each month uses the rate applicable at that time.`}
+              >
+                FD rate fell during cycle ℹ
               </span>
             )}
           </div>
