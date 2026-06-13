@@ -41,8 +41,8 @@ input[type='range'] {
 }
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: #4f46e5;
   cursor: pointer;
@@ -50,8 +50,8 @@ input[type='range']::-webkit-slider-thumb {
   box-shadow: 0 0 0 3px rgba(79,70,229,0.18), 0 1px 3px rgba(15,23,42,0.12);
 }
 input[type='range']::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: #4f46e5;
   cursor: pointer;
@@ -86,9 +86,22 @@ input[type='range']::-moz-range-thumb {
   transition: opacity 0.12s ease;
   margin-bottom: 6px;
 }
-.tooltip:hover .tooltip-content {
+.tooltip:hover .tooltip-content,
+.tooltip:focus-within .tooltip-content {
   visibility: visible;
   opacity: 1;
+}
+
+/* On mobile, tooltips open downward from the icon (prevents clipping by card edges) */
+@media (max-width: 639px) {
+  .tooltip .tooltip-content {
+    bottom: auto;
+    top: calc(100% + 6px);
+    left: 0;
+    transform: none;
+    width: min(220px, calc(100vw - 24px));
+    margin-bottom: 0;
+  }
 }
 
 /* Fade in */

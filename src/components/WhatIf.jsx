@@ -9,13 +9,13 @@ function durationLabel(scenarioB) {
 function Lever({ label, value, onDec, onInc, decDisabled, incDisabled }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-xs text-text-secondary">{label}</span>
-      <div className="flex items-center gap-1.5">
+      <span className="text-xs text-text-secondary min-w-0 flex-1 truncate">{label}</span>
+      <div className="flex items-center gap-1.5 flex-shrink-0">
         <button type="button" onClick={onDec} disabled={decDisabled}
-          className="w-7 h-7 rounded-lg border border-border text-text-secondary hover:bg-card-hover disabled:opacity-30 disabled:hover:bg-transparent flex items-center justify-center text-base leading-none">−</button>
+          className="w-10 h-10 rounded-lg border border-border text-text-secondary hover:bg-card-hover disabled:opacity-30 disabled:hover:bg-transparent flex items-center justify-center text-base leading-none">−</button>
         <span className="num text-xs font-semibold text-text-primary w-20 text-center">{value}</span>
         <button type="button" onClick={onInc} disabled={incDisabled}
-          className="w-7 h-7 rounded-lg border border-border text-text-secondary hover:bg-card-hover disabled:opacity-30 disabled:hover:bg-transparent flex items-center justify-center text-base leading-none">+</button>
+          className="w-10 h-10 rounded-lg border border-border text-text-secondary hover:bg-card-hover disabled:opacity-30 disabled:hover:bg-transparent flex items-center justify-center text-base leading-none">+</button>
       </div>
     </div>
   )

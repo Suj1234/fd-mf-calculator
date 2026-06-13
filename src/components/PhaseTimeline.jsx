@@ -33,7 +33,13 @@ export default function PhaseTimeline({ phases, perpetual, currentAge = 0 }) {
         {tooltip && (
           <div
             className="absolute -top-2 z-10 bg-[#0f172a] text-white text-[10px] px-3 py-2 rounded-lg pointer-events-none whitespace-nowrap shadow-card-md -translate-y-full"
-            style={{ left: `${tooltip.leftPct}%`, transform: 'translateX(-50%) translateY(-100%)' }}
+            style={
+              tooltip.anchor === 'left'
+                ? { left: 0, transform: 'translateY(-100%)' }
+                : tooltip.anchor === 'right'
+                ? { right: 0, left: 'auto', transform: 'translateY(-100%)' }
+                : { left: `${tooltip.leftPct}%`, transform: 'translateX(-50%) translateY(-100%)' }
+            }
           >
             <div className="font-bold mb-0.5">
               Phase {tooltip.phase.phase} · {tooltip.phase.perpetual ? 'Perpetual' : formatDuration(tooltip.phase.fdMonths)}
@@ -62,9 +68,16 @@ export default function PhaseTimeline({ phases, perpetual, currentAge = 0 }) {
                 style={{ width: `${pct}%`, backgroundColor: color, minWidth: pct < 2 ? '3px' : undefined }}
                 onMouseEnter={() => setTooltip({
                   phase,
-                  leftPct: Math.min(85, Math.max(15, midPct)),
+                  leftPct: midPct,
+                  anchor: midPct < 25 ? 'left' : midPct > 75 ? 'right' : 'center',
                 })}
                 onMouseLeave={() => setTooltip(null)}
+                onTouchStart={() => setTooltip({
+                  phase,
+                  leftPct: midPct,
+                  anchor: midPct < 25 ? 'left' : midPct > 75 ? 'right' : 'center',
+                })}
+                onTouchEnd={() => setTimeout(() => setTooltip(null), 1800)}
               >
                 {/* Phase label: inside block if wide enough */}
                 {pct > 6 && (

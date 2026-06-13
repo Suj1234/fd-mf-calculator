@@ -53,7 +53,16 @@ export default function StrategyExplainer() {
         <p className="text-xs text-text-secondary leading-relaxed mb-3">
           You decide how much goes into each. A common split is 50–70% in FD (for near-term income) and the rest in MF (for long-term growth).
         </p>
-        <div className="flex items-center flex-wrap gap-2">
+        {/* Mobile: vertical stack */}
+        <div className="flex flex-col gap-1.5 sm:hidden">
+          <Box label="₹1 Crore corpus" colorClass="border-border bg-card-hover" />
+          <div className="text-center text-text-muted text-sm">↓</div>
+          <Box label="₹50L in FD" sub="your income source" colorClass="border-accent-fd/30 bg-accent-fd/5" />
+          <div className="text-center text-text-muted text-sm">+</div>
+          <Box label="₹50L in MF" sub="your growth engine" colorClass="border-accent-mf/30 bg-accent-mf/5" />
+        </div>
+        {/* Desktop: horizontal flow */}
+        <div className="hidden sm:flex items-center flex-wrap gap-2">
           <Box label="₹1 Crore corpus" colorClass="border-border bg-card-hover" />
           <Arrow />
           <Box label="₹50L in FD" sub="your income source" colorClass="border-accent-fd/30 bg-accent-fd/5" />
@@ -94,7 +103,18 @@ export default function StrategyExplainer() {
           The FD eventually runs dry (typically after 5–8 years). Now you sell <strong>50%</strong> of your MF,
           pay the LTCG tax on gains, and put the proceeds into a new FD. The other 50% stays in MF and keeps growing.
         </p>
-        <div className="flex items-center flex-wrap gap-1.5 mb-2">
+        {/* Mobile: vertical stack */}
+        <div className="flex flex-col gap-1.5 sm:hidden mb-2">
+          <Box label="MF grew to ₹98L" colorClass="border-accent-mf/30 bg-accent-mf/5" />
+          <div className="text-center text-text-muted text-sm">↓</div>
+          <Box label="Sell 50% = ₹49L" colorClass="border-accent-mf/30 bg-accent-mf/5" />
+          <div className="text-center text-text-muted text-sm">↓</div>
+          <Box label="Pay LTCG tax" sub="~₹3L on gains" colorClass="border-accent-tax/30 bg-accent-tax/5" />
+          <div className="text-center text-text-muted text-sm">↓</div>
+          <Box label="New FD ≈ ₹46L" sub="next cycle begins" colorClass="border-accent-fd/30 bg-accent-fd/5" />
+        </div>
+        {/* Desktop: horizontal flow */}
+        <div className="hidden sm:flex items-center flex-wrap gap-1.5 mb-2">
           <Box label="MF grew to ₹98L" colorClass="border-accent-mf/30 bg-accent-mf/5" />
           <Arrow />
           <Box label="Sell 50% = ₹49L" colorClass="border-accent-mf/30 bg-accent-mf/5" />

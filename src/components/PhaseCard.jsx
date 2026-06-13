@@ -84,8 +84,9 @@ export default function PhaseCard({ phase, baseWithdrawal }) {
 
         {/* Expand toggle with label */}
         <div className="flex-shrink-0 mt-1 flex items-center gap-1 text-[10px] text-text-muted hover:text-text-secondary transition-colors">
+          <span className="sm:hidden">{expanded ? 'Hide' : 'Detail'}</span>
           <span className="hidden sm:inline">{expanded ? 'Hide detail' : 'Month-by-month detail'}</span>
-          <span className="text-sm font-medium">{expanded ? '−' : '+'}</span>
+          <span className="text-sm font-medium ml-0.5">{expanded ? '−' : '+'}</span>
         </div>
       </button>
 

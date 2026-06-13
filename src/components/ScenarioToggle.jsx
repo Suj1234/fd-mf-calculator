@@ -44,7 +44,7 @@ export default function ScenarioToggle({ scenarioA, scenarioB, activeScenario, o
               key={key}
               type="button"
               onClick={() => onScenarioChange(key)}
-              className={`relative flex flex-col gap-2 px-4 py-3.5 rounded-xl text-left transition-all border border-border bg-card ${
+              className={`relative flex flex-col gap-1.5 sm:gap-2 px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl text-left transition-all border border-border bg-card ${
                 isActive
                   ? 'shadow-card'
                   : 'opacity-55 hover:opacity-100 hover:shadow-sm'
@@ -97,8 +97,8 @@ export default function ScenarioToggle({ scenarioA, scenarioB, activeScenario, o
                 )}
               </div>
 
-              {/* Description */}
-              <p className="text-[11px] text-text-secondary leading-relaxed">{sub}</p>
+              {/* Description — hide on mobile for inactive card to reduce card height */}
+              <p className={`text-[11px] text-text-secondary leading-relaxed ${!isActive ? 'hidden sm:block' : ''}`}>{sub}</p>
             </button>
           )
         })}
