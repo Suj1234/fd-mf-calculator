@@ -19,6 +19,48 @@ export default function StrategyExplainer() {
   return (
     <div className="flex flex-col gap-7 px-6 py-6">
 
+      {/* ── The Cycle ── */}
+      <div>
+        <SectionTitle>The core loop</SectionTitle>
+        <div className="rounded-xl border border-border bg-card-hover p-4">
+
+          {/* Mobile: vertical */}
+          <div className="flex sm:hidden flex-col items-center gap-1.5">
+            <Box label="FD pays you" sub="monthly income" colorClass="border-accent-fd/30 bg-accent-fd/5" />
+            <span className="text-text-muted text-sm select-none">↓</span>
+            <Box label="MF grows silently" sub="completely untouched" colorClass="border-accent-mf/30 bg-accent-mf/5" />
+            <span className="text-text-muted text-sm select-none">↓</span>
+            <Box label="MF refills FD" sub="new cycle begins" colorClass="border-accent-mf/30 bg-accent-mf/5" />
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="text-text-muted text-xs select-none">↺</span>
+              <span className="text-[10px] text-text-muted">repeat from top</span>
+            </div>
+          </div>
+
+          {/* Desktop: horizontal */}
+          <div className="hidden sm:flex items-center gap-2 flex-wrap">
+            <Box label="FD pays you" sub="monthly income" colorClass="border-accent-fd/30 bg-accent-fd/5" />
+            <Arrow />
+            <Box label="MF grows silently" sub="completely untouched" colorClass="border-accent-mf/30 bg-accent-mf/5" />
+            <Arrow />
+            <Box label="MF refills FD" sub="new cycle begins" colorClass="border-accent-mf/30 bg-accent-mf/5" />
+            <span className="text-text-muted text-sm select-none mx-1">↺</span>
+            <span className="text-[10px] text-text-muted italic">repeats from start</span>
+          </div>
+
+          {/* Info note */}
+          <div className="mt-3 flex gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2.5">
+            <span className="shrink-0 text-sm text-blue-400 mt-0.5">ⓘ</span>
+            <p className="text-[10px] leading-relaxed text-blue-700">
+              <strong>How many cycles will you get?</strong> It depends on your monthly withdrawal.
+              If MF grows faster than you spend, each refill makes the FD bigger — the cycle runs <em>forever</em>.
+              Withdraw too much and each FD shrinks — the cycle ends after a few rounds.
+              The calculator tells you exactly which path your numbers lead to.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* ── Why not just FD or MF? ── */}
       <div>
         <SectionTitle>Why not just put everything in FD or MF?</SectionTitle>
