@@ -121,6 +121,7 @@ function correctRows(rows, principal) {
 function simulateScenario({
   fdAmount,
   mfAmount,
+  fdPct,
   monthlyWithdrawal,
   fdStartRate,
   mfRate,
@@ -135,6 +136,9 @@ function simulateScenario({
   ltcgExemption,
   isInflationAdjusted,
 }) {
+  // At each cycle transition, sell fdPct of MF (respects user's split preference)
+  const sellPct = (fdPct != null && fdPct > 0 && fdPct < 1) ? fdPct : 0.5
+
   const phases = []
   let fdPrincipal = fdAmount
   let mfCorpus = mfAmount
@@ -142,6 +146,7 @@ function simulateScenario({
   let globalMonth = 0
   let perpetual = false
   let perpetualPhase = null
+  let incomingLtcgTax = 0
 
   for (let phaseIdx = 0; phaseIdx < MAX_PHASES; phaseIdx++) {
     if (fdPrincipal <= 0 && mfCorpus <= 0) break
@@ -216,21 +221,23 @@ function simulateScenario({
         taxableGains: 0,
         nextFD: 0,
         nextMF: 0,
+        incomingLtcgTax,
         rows: correctedRows,
         perpetual: true,
       })
       break
     }
 
-    // LTCG calculation on half of MF corpus at transition
-    const halfMF = mfEndNominal / 2
-    const halfCostBasis = mfEndCostBasis / 2
-    const { taxableGains, ltcgTax, netProceeds } = calcLTCG(halfMF, halfCostBasis, ltcgEnabled, ltcgRate, ltcgExemption)
+    // Sell fdPct of MF at transition (respects user's split preference)
+    const sellMF = mfEndNominal * sellPct
+    const keepMF = mfEndNominal * (1 - sellPct)
+    const sellCostBasis = mfEndCostBasis * sellPct
+    const keepCostBasis = mfEndCostBasis * (1 - sellPct)
+    const { taxableGains, ltcgTax, netProceeds } = calcLTCG(sellMF, sellCostBasis, ltcgEnabled, ltcgRate, ltcgExemption)
 
     const nextFD = netProceeds
-    const nextMF = halfMF
-    // The half that stays in MF keeps its original cost basis (unrealised units not sold)
-    const nextMFCostBasis = halfCostBasis
+    const nextMF = keepMF
+    const nextMFCostBasis = keepCostBasis
 
     phases.push({
       phase: phaseIdx + 1,
@@ -256,6 +263,7 @@ function simulateScenario({
       ltcgTax,
       nextFD,
       nextMF,
+      incomingLtcgTax,
       rows: correctedRows,
       perpetual: false,
     })
@@ -264,6 +272,7 @@ function simulateScenario({
     fdPrincipal = nextFD
     mfCorpus = nextMF
     mfCostBasis = nextMFCostBasis
+    incomingLtcgTax = ltcgTax
 
     if (fdPrincipal <= 0 && mfCorpus <= 0) break
   }

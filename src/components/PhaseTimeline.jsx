@@ -1,20 +1,13 @@
 import { useState } from 'react'
-import { formatDuration } from '../logic/formatters'
+import { formatDuration, formatCompact } from '../logic/formatters'
+import { phaseHealthColor as getPhaseColor } from '../logic/colors'
 
-// Duration-based color: green (long/healthy) → amber → red (short/depleted)
-function getPhaseColor(months, isPerpetual) {
-  if (isPerpetual) return '#059669'
-  if (months >= 72) return '#059669'   // 6+ yr  → deep green
-  if (months >= 36) return '#34d399'   // 3–6 yr → medium green
-  if (months >= 12) return '#d97706'   // 1–3 yr → amber
-  if (months >= 6)  return '#ea580c'   // 6–12 mo → orange
-  if (months >= 2)  return '#dc2626'   // 2–6 mo → red
-  return '#7f1d1d'                     // < 2 mo → dark red
-}
-
-export default function PhaseTimeline({ phases, perpetual }) {
+export default function PhaseTimeline({ phases, perpetual, currentAge = 0 }) {
   const [tooltip, setTooltip] = useState(null)
   const totalMonths = phases.reduce((s, p) => s + p.fdMonths, 0) || 1
+  const totalYears = totalMonths / 12
+
+  const ageAt = (monthIdx) => Math.round(currentAge + monthIdx / 12)
 
   // Legend: show each phase > 6 months individually; group ≤ 6 months
   const longPhases  = phases.filter((p) => p.fdMonths > 6 || p.perpetual)
@@ -31,18 +24,25 @@ export default function PhaseTimeline({ phases, perpetual }) {
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Lifecycle Timeline</h3>
-        <p className="text-[10px] text-text-muted mt-0.5">Each block = one FD cycle. Color shows phase health: green = long, red = short.</p>
+        <h3 className="text-sm font-semibold text-text-primary">Lifecycle Timeline</h3>
+        <p className="text-[11px] text-text-muted mt-0.5">Each block = one FD cycle. Color shows phase health: green = long, red = short.</p>
       </div>
 
       {/* Bar with tooltip */}
       <div className="relative">
         {tooltip && (
           <div
-            className="absolute -top-8 z-10 bg-[#0f172a] text-white text-[10px] font-medium px-2.5 py-1 rounded-lg pointer-events-none whitespace-nowrap shadow-card-md"
-            style={{ left: `${tooltip.leftPct}%`, transform: 'translateX(-50%)' }}
+            className="absolute -top-2 z-10 bg-[#0f172a] text-white text-[10px] px-3 py-2 rounded-lg pointer-events-none whitespace-nowrap shadow-card-md -translate-y-full"
+            style={{ left: `${tooltip.leftPct}%`, transform: 'translateX(-50%) translateY(-100%)' }}
           >
-            {tooltip.text}
+            <div className="font-bold mb-0.5">
+              Phase {tooltip.phase.phase} · {tooltip.phase.perpetual ? 'Perpetual' : formatDuration(tooltip.phase.fdMonths)}
+            </div>
+            {currentAge > 0 && !tooltip.phase.perpetual && (
+              <div className="text-white/70">Ages {ageAt(tooltip.phase.globalStart - 1)}–{ageAt(tooltip.phase.globalEnd)}</div>
+            )}
+            <div className="text-white/70">FD opened: {formatCompact(tooltip.phase.fdPrincipal)}</div>
+            <div className="text-white/70">MF at start: {formatCompact(tooltip.phase.mfStart)}</div>
             <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#0f172a]" />
           </div>
         )}
@@ -61,8 +61,8 @@ export default function PhaseTimeline({ phases, perpetual }) {
                 className="relative flex items-center justify-center cursor-default transition-all hover:brightness-110"
                 style={{ width: `${pct}%`, backgroundColor: color, minWidth: pct < 2 ? '3px' : undefined }}
                 onMouseEnter={() => setTooltip({
-                  text: `Phase ${phase.phase}: ${phase.perpetual ? '∞ Perpetual' : formatDuration(phase.fdMonths)}`,
-                  leftPct: Math.min(95, Math.max(5, midPct)),
+                  phase,
+                  leftPct: Math.min(85, Math.max(15, midPct)),
                 })}
                 onMouseLeave={() => setTooltip(null)}
               >
@@ -83,6 +83,14 @@ export default function PhaseTimeline({ phases, perpetual }) {
           })}
         </div>
       </div>
+
+      {/* Age axis — anchors the timeline to the user's life (P16) */}
+      {currentAge > 0 && !perpetual && (
+        <div className="flex justify-between text-[10px] text-text-muted -mt-1">
+          <span>Now · age {currentAge}</span>
+          <span>Age {Math.round(currentAge + totalYears)} ↓ corpus runs out</span>
+        </div>
+      )}
 
       {/* Legend — only phases > 6 months individually; short phases grouped */}
       <div className="flex gap-x-4 gap-y-1 flex-wrap">

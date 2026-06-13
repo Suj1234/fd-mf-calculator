@@ -1,5 +1,3 @@
-// Content-only component — rendered inside a modal in App.jsx
-
 function Arrow() {
   return <span className="text-text-muted text-sm select-none mx-1">→</span>
 }
@@ -13,82 +11,141 @@ function Box({ label, sub, colorClass = 'border-border bg-card-hover' }) {
   )
 }
 
-function Term({ word, def }) {
-  return (
-    <div>
-      <div className="text-xs font-semibold text-text-primary">{word}</div>
-      <div className="text-xs text-text-muted mt-0.5 leading-relaxed">{def}</div>
-    </div>
-  )
+function SectionTitle({ children }) {
+  return <div className="text-[10px] text-text-muted font-bold uppercase tracking-wider mb-3">{children}</div>
 }
 
 export default function StrategyExplainer() {
   return (
-    <div className="flex flex-col gap-6 px-6 py-6">
-      {/* Summary */}
-      <p className="text-sm text-text-secondary leading-relaxed">
-        You split your retirement savings between a{' '}
-        <span className="text-accent-fd font-medium">Fixed Deposit</span> and an{' '}
-        <span className="text-accent-mf font-medium">Equity Mutual Fund</span>. You live off the FD. The MF
-        compounds untouched. When the FD runs out, you sell half the MF, pay taxes, and open a new (larger) FD.
-        This repeats until the portfolio becomes self-sustaining forever.
-      </p>
+    <div className="flex flex-col gap-7 px-6 py-6">
 
-      {/* Flow: during phase */}
+      {/* ── Why not just FD or MF? ── */}
       <div>
-        <div className="text-[10px] text-text-muted uppercase tracking-wider mb-3">During each cycle</div>
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center flex-wrap gap-1">
-            <Box label="Your FD" sub="earning interest" colorClass="border-accent-fd/30 bg-accent-fd/5" />
-            <Arrow />
-            <Box label="Monthly withdrawal" sub="paid to you" colorClass="border-accent-wd/30 bg-accent-wd/5" />
+        <SectionTitle>Why not just put everything in FD or MF?</SectionTitle>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            <div className="text-xs font-semibold text-red-800 mb-1">Only FD ✗</div>
+            <p className="text-xs text-red-700 leading-relaxed">
+              ₹1Cr FD at 7% gives ~₹58K/month in interest. Sounds fine — but after 10 years,
+              inflation makes that ₹58K worth only ~₹32K in today's money. Your lifestyle quietly shrinks every year.
+            </p>
           </div>
-          <div className="flex items-center flex-wrap gap-1">
-            <Box label="Your MF" sub="compounding ~12%" colorClass="border-accent-mf/30 bg-accent-mf/5" />
-            <span className="text-xs text-text-muted italic ml-1">← untouched, growing freely</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Flow: at transition */}
-      <div>
-        <div className="text-[10px] text-text-muted uppercase tracking-wider mb-3">When FD runs out</div>
-        <div className="flex items-center flex-wrap gap-1">
-          <Box label="Sell 50% of MF" colorClass="border-accent-mf/30 bg-accent-mf/5" />
-          <Arrow />
-          <Box label="Pay LTCG tax" sub="12.5% on gains" colorClass="border-accent-tax/30 bg-accent-tax/5" />
-          <Arrow />
-          <Box label="Open new FD" sub="next cycle begins" colorClass="border-accent-fd/30 bg-accent-fd/5" />
-        </div>
-        <p className="text-xs text-text-muted mt-2">The other 50% stays in MF and keeps compounding.</p>
-      </div>
-
-      {/* Perpetual outcome */}
-      <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-4">
-        <div className="flex items-start gap-3">
-          <span className="text-accent-mf text-xl leading-none mt-0.5">∞</span>
-          <div>
-            <div className="text-sm font-semibold text-emerald-800">The goal: self-sustaining forever</div>
-            <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
-              As cycles repeat, the MF grows faster than withdrawals deplete it. Eventually the FD interest alone
-              covers monthly expenses — the MF never needs to be touched again.
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            <div className="text-xs font-semibold text-red-800 mb-1">Only MF ✗</div>
+            <p className="text-xs text-red-700 leading-relaxed">
+              Markets go up and down. If you sell MF units every month to pay expenses,
+              you're forced to sell even during a crash — locking in losses permanently. Too risky for retirement income.
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Glossary */}
-      <div>
-        <div className="text-[10px] text-text-muted uppercase tracking-wider mb-3">Key terms</div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Term word="Phase / Cycle" def="One FD cycle from opening to exhaustion. Each phase = a row in the timeline below." />
-          <Term word="LTCG Tax" def="Long Term Capital Gains: 12.5% on equity MF profits above ₹1.25L/year (Budget 2024)." />
-          <Term word="Scenario A" def="You withdraw the same fixed ₹ amount every month." />
-          <Term word="Scenario B" def="Your withdrawal rises each year with inflation — purchasing power stays constant." />
-          <Term word="Real Value" def="A future withdrawal expressed in today's rupees, adjusted for inflation." />
-          <Term word="Self-sustaining" def="When FD interest (after income tax) ≥ monthly withdrawal — money never runs out." />
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mt-3">
+          <div className="text-xs font-semibold text-emerald-800 mb-1">FD + MF together ✓</div>
+          <p className="text-xs text-emerald-700 leading-relaxed">
+            FD gives stable, predictable income for years — no market stress. MF grows untouched in the background.
+            When the FD is spent, you refill it from the (now bigger) MF. Best of both worlds.
+          </p>
         </div>
       </div>
+
+      {/* ── Step 1: Split ── */}
+      <div>
+        <SectionTitle>Step 1 — Split your retirement corpus into two parts</SectionTitle>
+        <p className="text-xs text-text-secondary leading-relaxed mb-3">
+          You decide how much goes into each. A common split is 50–70% in FD (for near-term income) and the rest in MF (for long-term growth).
+        </p>
+        <div className="flex items-center flex-wrap gap-2">
+          <Box label="₹1 Crore corpus" colorClass="border-border bg-card-hover" />
+          <Arrow />
+          <Box label="₹50L in FD" sub="your income source" colorClass="border-accent-fd/30 bg-accent-fd/5" />
+          <span className="text-text-muted text-sm">+</span>
+          <Box label="₹50L in MF" sub="your growth engine" colorClass="border-accent-mf/30 bg-accent-mf/5" />
+        </div>
+        <p className="text-[10px] text-text-muted mt-2 leading-relaxed">
+          You can adjust this split in the calculator. More FD = safer income now. More MF = bigger corpus later.
+        </p>
+      </div>
+
+      {/* ── Step 2: During a cycle ── */}
+      <div>
+        <SectionTitle>Step 2 — Live off FD while MF grows silently</SectionTitle>
+        <p className="text-xs text-text-secondary leading-relaxed mb-3">
+          Each month you withdraw from the FD (interest + principal as needed). The MF is not touched at all — it just compounds.
+        </p>
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-center flex-wrap gap-2">
+            <Box label="FD (₹50L)" sub="earning 7% interest" colorClass="border-accent-fd/30 bg-accent-fd/5" />
+            <Arrow />
+            <Box label="₹50,000/month" sub="paid to you" colorClass="border-accent-wd/30 bg-accent-wd/5" />
+          </div>
+          <div className="flex items-center flex-wrap gap-2">
+            <Box label="MF (₹50L)" sub="growing at ~12%" colorClass="border-accent-mf/30 bg-accent-mf/5" />
+            <span className="text-xs text-text-muted italic">← untouched. After 6 yrs it has grown to ~₹98L</span>
+          </div>
+        </div>
+        <p className="text-[10px] text-text-muted mt-2 leading-relaxed">
+          Because MF is not disturbed, it grows without you worrying about market timing. It has years to compound freely.
+        </p>
+      </div>
+
+      {/* ── Step 3: FD runs out ── */}
+      <div>
+        <SectionTitle>Step 3 — When FD runs out, refill it from MF</SectionTitle>
+        <p className="text-xs text-text-secondary leading-relaxed mb-3">
+          The FD eventually runs dry (typically after 5–8 years). Now you sell <strong>50%</strong> of your MF,
+          pay the LTCG tax on gains, and put the proceeds into a new FD. The other 50% stays in MF and keeps growing.
+        </p>
+        <div className="flex items-center flex-wrap gap-1.5 mb-2">
+          <Box label="MF grew to ₹98L" colorClass="border-accent-mf/30 bg-accent-mf/5" />
+          <Arrow />
+          <Box label="Sell 50% = ₹49L" colorClass="border-accent-mf/30 bg-accent-mf/5" />
+          <Arrow />
+          <Box label="Pay LTCG tax" sub="~₹3L on gains" colorClass="border-accent-tax/30 bg-accent-tax/5" />
+          <Arrow />
+          <Box label="New FD ≈ ₹46L" sub="next cycle begins" colorClass="border-accent-fd/30 bg-accent-fd/5" />
+        </div>
+        <p className="text-[10px] text-text-muted leading-relaxed">
+          The remaining ₹49L stays in MF and keeps compounding for the next cycle.
+        </p>
+
+        {/* LTCG plain English */}
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mt-3">
+          <div className="text-xs font-semibold text-amber-800 mb-1">What is LTCG tax?</div>
+          <p className="text-xs text-amber-700 leading-relaxed">
+            When you sell equity mutual funds held over 1 year, the government taxes 12.5% of your <em>profit</em> (not the full amount).
+            First ₹1.25L of profit each year is tax-free (Budget 2024 rule). So if you sell ₹49L of MF and your cost was ₹25L,
+            your profit is ₹24L — tax ≈ ₹2.8L. The rest goes into your new FD.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Two outcomes ── */}
+      <div>
+        <SectionTitle>Two possible outcomes — depending on your withdrawal rate</SectionTitle>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            <div className="text-xs font-semibold text-red-800 mb-1">Money runs out in N years</div>
+            <p className="text-xs text-red-700 leading-relaxed">
+              If you're withdrawing too much relative to your corpus, each new FD is smaller than the last.
+              Eventually MF is too small to refill a meaningful FD — the money runs out.
+              Example: ₹50L corpus with ₹80K/month withdrawal.
+            </p>
+          </div>
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-accent-mf text-base">∞</span>
+              <div className="text-xs font-semibold text-emerald-800">Self-sustaining forever</div>
+            </div>
+            <p className="text-xs text-emerald-700 leading-relaxed">
+              If withdrawal is sustainable, each new FD is larger than the last — MF grows faster than you spend.
+              Eventually FD interest alone covers your expenses. You never touch principal again. Money lasts forever.
+            </p>
+          </div>
+        </div>
+        <p className="text-[10px] text-text-muted mt-3 leading-relaxed text-center">
+          This calculator shows exactly which outcome your numbers lead to — and by how many years.
+        </p>
+      </div>
+
     </div>
   )
 }

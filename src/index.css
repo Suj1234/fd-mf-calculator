@@ -97,3 +97,29 @@ input[type='range']::-moz-range-thumb {
   to   { opacity: 1; transform: translateY(0); }
 }
 .fade-in { animation: fadeIn 0.2s ease forwards; }
+
+/* Print-only header — hidden on screen */
+.print-only { display: none; }
+
+/* ── Print / Save-as-PDF report ── */
+@media print {
+  @page { margin: 14mm; }
+  body { background: #fff !important; }
+
+  /* Interactive chrome has no place in a printed report */
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+
+  /* Unpin sticky regions and release inner scrollboxes so everything prints */
+  header, aside > div { position: static !important; }
+  .max-h-\[440px\], aside > div { max-height: none !important; overflow: visible !important; }
+
+  /* Reveal every tab panel so the report is complete, not just the active tab */
+  .result-panel { display: block !important; }
+  .result-panel + .result-panel { margin-top: 20px; }
+
+  /* Single column, cards kept intact across page breaks */
+  .lg\:flex-row { flex-direction: column !important; }
+  .bg-card, .rounded-2xl, .rounded-xl { break-inside: avoid; box-shadow: none !important; }
+  a[href]::after { content: ''; }
+}

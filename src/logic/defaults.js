@@ -18,6 +18,19 @@ export const DEFAULT_INPUTS = {
   ltcgExemption: 125000,
 }
 
+// Reference FD rate surfaced as a one-click "use current rate" button.
+// Update the rate + asOf each quarter (no public CORS API exists to fetch live).
+export const CURRENT_SBI_FD = { rate: 0.069, asOf: 'Jun 2026', tenure: '2–3 yr' }
+
+// Plain-language definitions for jargon, shown via the <Term> tooltip (P22).
+export const GLOSSARY = {
+  ltcg: 'Long-Term Capital Gains tax — 12.5% on equity mutual-fund profits when you sell units held over 1 year (on gains above ₹1.25L per year).',
+  cagr: 'Compound Annual Growth Rate — the average yearly return, accounting for compounding over time.',
+  mfCorpus: 'Your total mutual-fund holding (units × current value) at a point in time.',
+  fdCycle: 'One round of the strategy: live off an FD until it empties, then sell some MF to open a fresh FD.',
+  realValue: "Today's rupees — money adjusted for inflation, so future amounts can be compared to present-day buying power.",
+}
+
 export const TOOLTIPS = {
   fdStartRate: 'SBI 2–3yr FD: 7.0% (2023) → 6.9% (Apr 2025). Rates have declined ~2% over 15 years.',
   mfRate: 'Nifty 50 15-yr CAGR: ~12–13%. Includes bear markets of 2008, 2020.',

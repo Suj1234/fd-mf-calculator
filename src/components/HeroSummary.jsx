@@ -70,7 +70,7 @@ function StatCell({ label, value, sub, subClass = 'text-text-muted', valueClass 
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
-export default function HeroSummary({ scenarioA, scenarioB, activeScenario, onScenarioChange, currentAge, monthlyWithdrawal, inflationRate }) {
+export default function HeroSummary({ scenarioA, scenarioB, activeScenario, currentAge, monthlyWithdrawal, inflationRate }) {
   const active = activeScenario === 'A' ? scenarioA : scenarioB
   const perpetual = active.perpetual
 
@@ -97,69 +97,14 @@ export default function HeroSummary({ scenarioA, scenarioB, activeScenario, onSc
     ? Math.round(currentAge + active.totalMonths / 12)
     : null
 
-  const tabDuration = (r) =>
-    r.perpetual ? '∞ Perpetual' : r.totalMonths ? formatDuration(r.totalMonths) : '—'
-
-  const futureWd5yr = monthlyWithdrawal && inflationRate
-    ? Math.round(monthlyWithdrawal * Math.pow(1 + inflationRate, 5))
+  // Buying power of a "perpetual" fixed withdrawal after 30 years (P14).
+  const buyingPower30 = monthlyWithdrawal && inflationRate
+    ? Math.round(monthlyWithdrawal / Math.pow(1 + inflationRate, 30))
     : null
 
-  const tabs = [
-    {
-      key: 'A',
-      label: 'Fixed Withdrawal',
-      sub: monthlyWithdrawal
-        ? `Always ${formatCompact(monthlyWithdrawal)}/mo — same every month, but buys less as prices rise`
-        : 'Same ₹ every month — buys less over time as prices rise',
-      result: scenarioA,
-    },
-    {
-      key: 'B',
-      label: 'Inflation-Adjusted',
-      sub: futureWd5yr
-        ? `You withdraw more each year to match rising prices — e.g. ${formatCompact(monthlyWithdrawal)}/mo today becomes ~${formatCompact(futureWd5yr)}/mo in 5 yrs (same lifestyle, higher price tags)`
-        : 'You withdraw more each year to match rising prices — same lifestyle, higher price tags',
-      result: scenarioB,
-      recommended: true,
-    },
-  ]
 
   return (
     <div className="flex flex-col gap-3">
-
-      {/* ── Scenario tab switcher ── */}
-      <div className="grid grid-cols-2 gap-2 bg-[#e8edf8] border border-border rounded-2xl p-1.5">
-        {tabs.map(({ key, result, label, sub, recommended }) => {
-          const isActive = activeScenario === key
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => onScenarioChange(key)}
-              className={`flex items-center justify-between gap-2 px-4 py-3 rounded-xl text-left transition-all ${
-                isActive ? 'bg-card shadow-card' : 'hover:bg-white/60'
-              }`}
-            >
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <div className="text-[10px] font-bold text-text-muted uppercase tracking-[0.12em]">{label}</div>
-                  {recommended && (
-                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-accent-mf text-white font-bold leading-none uppercase tracking-wide">
-                      RECOMMENDED
-                    </span>
-                  )}
-                </div>
-                <div className="text-xs text-text-secondary mt-0.5">{sub}</div>
-              </div>
-              <div className={`num text-base font-bold flex-shrink-0 ${
-                result.perpetual ? 'text-accent-mf' : isActive ? 'text-text-primary' : 'text-text-muted'
-              }`}>
-                {tabDuration(result)}
-              </div>
-            </button>
-          )
-        })}
-      </div>
 
       {/* ── Hero card ── */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-card">
@@ -190,7 +135,25 @@ export default function HeroSummary({ scenarioA, scenarioB, activeScenario, onSc
           {subLabel && !ageAtEnd && (
             <p className="text-sm text-text-muted mt-3">{subLabel}</p>
           )}
+
+          {perpetual && (
+            <p className="text-xs text-text-muted mt-2">*Perpetual in <span className="font-medium">nominal</span> rupees — not in real spending power</p>
+          )}
         </div>
+
+        {/* "Forever is an illusion" warning — fixed-withdrawal only (P14) */}
+        {perpetual && buyingPower30 && (
+          <div className="mx-6 mb-2 -mt-2 flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+            <span className="text-amber-500 text-base flex-shrink-0 leading-none mt-0.5">⚠️</span>
+            <p className="text-xs text-amber-800 leading-relaxed">
+              <span className="font-semibold">“Forever” is misleading.</span> At {(inflationRate * 100).toFixed(0)}% inflation,
+              your {formatCompact(monthlyWithdrawal)}/mo will have the buying power of only{' '}
+              <span className="font-semibold">{formatCompact(buyingPower30)}/mo</span> in 30 years.
+              This scenario is <span className="font-semibold">not recommended</span> for long-term retirement —
+              switch to the <span className="font-semibold">Inflation-Adjusted</span> tab for a realistic picture.
+            </p>
+          </div>
+        )}
 
         {/* Benchmark band (non-perpetual only) */}
         {!perpetual && active.totalMonths && (
@@ -200,30 +163,30 @@ export default function HeroSummary({ scenarioA, scenarioB, activeScenario, onSc
           <BenchmarkBand totalMonths={active.totalMonths} perpetual={true} />
         )}
 
-        {/* Stats — reordered by importance */}
+        {/* Stats — colors carry honest meaning (P15) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border border-t border-border">
-          {/* 1. Final MF — today's ₹ is the primary value */}
-          <StatCell
-            label="Final MF value"
-            value={perpetual ? '∞' : formatCompact(active.finalMF)}
-            sub={perpetual ? 'growing indefinitely' : undefined}
-            subClass="text-text-muted"
-            valueClass="text-accent-mf"
-          />
-          {/* 2. Tax paid — FD + LTCG merged */}
-          <StatCell
-            label="Tax paid"
-            value={formatCompact(active.totalTax)}
-            sub={`FD: ${formatCompact(active.totalFDTax)} · LTCG: ${formatCompact(active.totalLTCG)}`}
-            valueClass="text-accent-tax"
-          />
-          {/* 3. Total withdrawn */}
+          {/* 1. Final MF — green only when it's actually meaningful, red when depleted */}
+          {perpetual ? (
+            <StatCell label="Final MF value" value="∞" sub="growing indefinitely" valueClass="text-accent-mf" />
+          ) : active.finalMF < 100000 ? (
+            <StatCell label="Final MF value" value={formatCompact(active.finalMF)} sub="corpus depleted" subClass="text-accent-tax font-medium" valueClass="text-accent-tax" />
+          ) : (
+            <StatCell label="Final MF value" value={formatCompact(active.finalMF)} valueClass="text-accent-mf" />
+          )}
+          {/* 2. Total withdrawn — money you successfully spent */}
           <StatCell
             label="Total withdrawn"
             value={formatCompact(active.totalNomWd)}
             valueClass="text-accent-wd"
           />
-          {/* 4. FD cycles */}
+          {/* 4. Tax paid — informational, not a danger; neutral so it doesn't read as a loss */}
+          <StatCell
+            label="Tax paid"
+            value={formatCompact(active.totalTax)}
+            sub={`FD ${formatCompact(active.totalFDTax)} · LTCG ${formatCompact(active.totalLTCG)}`}
+            valueClass="text-text-secondary"
+          />
+          {/* 5. FD cycles */}
           <StatCell
             label="FD cycles"
             value={String(active.phases.length)}
