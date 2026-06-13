@@ -26,7 +26,7 @@ export default function HealthScore({ inputs, result }) {
 
   return (
     <div className="bg-card border border-border rounded-2xl shadow-card p-5">
-      <div className="flex items-center gap-5">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
         <Gauge score={hs.score} color={hs.color} />
 
         <div className="flex-1 min-w-0">

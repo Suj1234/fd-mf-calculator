@@ -221,18 +221,18 @@ export default function App() {
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
 
           {/* Brand */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-7 h-7 rounded-lg bg-accent-fd/15 border border-accent-fd/25 flex items-center justify-center flex-shrink-0">
               <span className="num text-accent-fd text-xs font-bold">₹</span>
             </div>
-            <div>
-              <h1 className="text-sm font-semibold text-text-primary leading-none">FD + MF Withdrawal Calculator</h1>
-              <p className="text-[10px] text-text-muted mt-0.5">FD + MF retirement simulator · Real Indian tax rules</p>
+            <div className="min-w-0">
+              <h1 className="text-sm font-semibold text-text-primary leading-none truncate">FD + MF Withdrawal Calculator</h1>
+              <p className="text-[10px] text-text-muted mt-0.5 hidden sm:block">FD + MF retirement simulator · Real Indian tax rules</p>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="relative flex items-center gap-2 no-print">
+          <div className="relative flex items-center gap-2 no-print flex-shrink-0">
             <button
               type="button"
               onClick={() => window.print()}
@@ -287,10 +287,10 @@ export default function App() {
 
           {/* Headline */}
           <div className="px-6 pt-5 pb-4 border-b border-border">
-            <h2 className="text-xl font-bold text-text-primary leading-snug">
+            <h2 className="text-base sm:text-xl font-bold text-text-primary leading-snug">
               How long will your FD + MF savings last in retirement?
             </h2>
-            <p className="text-sm text-text-secondary mt-1.5 leading-relaxed">
+            <p className="text-xs sm:text-sm text-text-secondary mt-1.5 leading-relaxed">
               Most retirees split savings between FD and Mutual Funds — but never calculate how long it actually lasts
               after inflation, LTCG tax, and falling FD rates. This tool does exactly that.
             </p>
@@ -309,7 +309,7 @@ export default function App() {
               </button>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-3">
 
               {/* Step 1 */}
               <div className="flex-1 flex flex-col gap-2 min-w-0">
@@ -333,7 +333,8 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="flex-shrink-0 text-text-muted font-bold text-base">→</div>
+              <div className="flex-shrink-0 text-text-muted font-bold text-base hidden sm:block">→</div>
+              <div className="text-center text-text-muted font-bold text-base sm:hidden">↓</div>
 
               {/* Step 2 */}
               <div className="flex-1 flex flex-col gap-2 min-w-0">
@@ -349,7 +350,8 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="flex-shrink-0 text-text-muted font-bold text-base">→</div>
+              <div className="flex-shrink-0 text-text-muted font-bold text-base hidden sm:block">→</div>
+              <div className="text-center text-text-muted font-bold text-base sm:hidden">↓</div>
 
               {/* Step 3 */}
               <div className="flex-1 flex flex-col gap-2 min-w-0">
@@ -373,7 +375,13 @@ export default function App() {
             </div>
 
             {/* Loop-back: U-bracket showing Step 3 feeds back into Step 2 */}
-            <div className="flex gap-3 mt-1">
+            {/* Mobile: simple text; Desktop: full U-bracket diagram */}
+            <div className="mt-3 sm:hidden text-center">
+              <p className="text-[10px] font-semibold text-accent-mf">
+                ↺ Sell % of MF → pay LTCG tax → open new FD → repeat
+              </p>
+            </div>
+            <div className="hidden sm:flex gap-3 mt-1">
               {/* Empty placeholder covering Step 1 + arrow */}
               <div className="flex-1" />
               <div className="w-4 flex-shrink-0" />
@@ -389,7 +397,7 @@ export default function App() {
             </div>
 
             {/* Two outcomes */}
-            <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
                 <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0 mt-1.5" />
                 <p className="text-[11px] text-red-700 leading-relaxed">
@@ -416,6 +424,19 @@ export default function App() {
             </div>
           </aside>
 
+          {/* Scroll shortcut — visible on mobile/tablet (below lg), hidden on desktop */}
+          {result && (
+            <div className="lg:hidden flex justify-center no-print">
+              <button
+                type="button"
+                onClick={() => resultsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className="text-xs text-accent-fd border border-accent-fd/30 rounded-full px-4 py-2 bg-accent-fd/5 hover:bg-accent-fd/10 transition-colors"
+              >
+                See projections ↓
+              </button>
+            </div>
+          )}
+
           {/* Right — Results */}
           <main className="flex-1 min-w-0 flex flex-col gap-4">
             {!result ? (
@@ -439,6 +460,7 @@ export default function App() {
                   <ResultTabs
                     active={activeTab}
                     onChange={setActiveTab}
+                    activeScenario={activeScenario}
                     tabs={[
                       {
                         key: 'summary', icon: '📊', label: 'Summary', printTitle: 'Summary',

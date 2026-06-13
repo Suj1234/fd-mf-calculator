@@ -7,7 +7,7 @@ const SLIDER_UNFILLED = '#dce3f0'
 
 function Tooltip({ text }) {
   return (
-    <span className="tooltip ml-1.5 cursor-help">
+    <span className="tooltip ml-1.5 cursor-help" tabIndex={0} onClick={(e) => e.stopPropagation()}>
       <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="text-text-muted inline">
         <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
         <text x="8" y="12" textAnchor="middle" fill="currentColor" fontSize="10" fontWeight="600">i</text>
@@ -76,6 +76,7 @@ function SliderInput({ label, value, onChange, min, max, step, tooltip }) {
         <div className="flex items-center gap-1">
           <input
             type="number"
+            style={{ fontSize: '16px' }}
             className="w-16 bg-[#f8faff] border border-border rounded-lg px-2 py-1 num text-xs text-right text-text-primary focus:outline-none focus:border-accent-fd focus:ring-1 focus:ring-accent-fd/20 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             value={(value * 100).toFixed(1)}
             step={(step * 100).toFixed(1)}
@@ -107,7 +108,14 @@ function SliderInput({ label, value, onChange, min, max, step, tooltip }) {
 function Toggle({ label, description, value, onChange, tooltip }) {
   return (
     <div>
-      <div className="flex items-center justify-between gap-3">
+      <div
+        className="flex items-center justify-between gap-3 min-h-[44px] cursor-pointer"
+        role="switch"
+        aria-checked={value}
+        tabIndex={0}
+        onClick={() => onChange(!value)}
+        onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onChange(!value) } }}
+      >
         <div className="flex-1 min-w-0">
           <div className="text-xs font-medium text-text-secondary flex items-center">
             {label}
@@ -115,12 +123,8 @@ function Toggle({ label, description, value, onChange, tooltip }) {
           </div>
           {description && <p className="text-[10px] text-text-muted mt-0.5 leading-relaxed">{description}</p>}
         </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={value}
-          onClick={() => onChange(!value)}
-          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent-fd focus:ring-offset-1 ${
+        <span
+          className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ${
             value ? 'bg-accent-fd' : 'bg-[#d1d5db]'
           }`}
         >
@@ -130,7 +134,7 @@ function Toggle({ label, description, value, onChange, tooltip }) {
             }`}
             style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.18), 0 1px 2px rgba(0,0,0,0.10)' }}
           />
-        </button>
+        </span>
       </div>
     </div>
   )
@@ -144,7 +148,7 @@ const PRESETS = [
 
 function CollapsibleCard({ step, title, summary, open, onToggle, children }) {
   return (
-    <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
+    <div className="bg-card rounded-2xl border border-border shadow-card">
       <button
         type="button"
         className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-card-hover transition-colors"
@@ -269,7 +273,7 @@ export default function InputPanel({ inputs, onChange }) {
               type="button"
               aria-label="Less FD"
               onClick={() => handleFdPctChange(Math.max(0, Math.round((fdPct - 0.05) * 100) / 100))}
-              className="w-8 h-8 rounded-lg border border-border text-text-secondary hover:bg-card-hover flex items-center justify-center text-lg leading-none flex-shrink-0 transition-colors"
+              className="w-10 h-10 rounded-lg border border-border text-text-secondary hover:bg-card-hover flex items-center justify-center text-lg leading-none flex-shrink-0 transition-colors"
             >−</button>
             <input
               type="range"
@@ -283,7 +287,7 @@ export default function InputPanel({ inputs, onChange }) {
               type="button"
               aria-label="More FD"
               onClick={() => handleFdPctChange(Math.min(1, Math.round((fdPct + 0.05) * 100) / 100))}
-              className="w-8 h-8 rounded-lg border border-border text-text-secondary hover:bg-card-hover flex items-center justify-center text-lg leading-none flex-shrink-0 transition-colors"
+              className="w-10 h-10 rounded-lg border border-border text-text-secondary hover:bg-card-hover flex items-center justify-center text-lg leading-none flex-shrink-0 transition-colors"
             >+</button>
           </div>
 
@@ -318,7 +322,7 @@ export default function InputPanel({ inputs, onChange }) {
                   key={p.label}
                   type="button"
                   onClick={() => handleFdPctChange(p.fdPct)}
-                  className={`flex-1 py-1.5 rounded-lg border text-center transition-colors ${
+                  className={`flex-1 py-2.5 rounded-lg border text-center transition-colors ${
                     isActive
                       ? 'border-accent-fd bg-accent-fd/10 text-accent-fd'
                       : 'border-border text-text-muted hover:border-accent-fd/40 hover:text-text-secondary'
@@ -383,7 +387,7 @@ export default function InputPanel({ inputs, onChange }) {
           </label>
           <p className="text-xs text-text-muted">Applied on FD interest income</p>
           <select
-            className="bg-[#f8faff] border border-border rounded-xl px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent-fd shadow-sm"
+            className="bg-[#f8faff] border border-border rounded-xl px-3 py-2.5 text-base text-text-primary focus:outline-none focus:border-accent-fd shadow-sm"
             value={inputs.taxSlab}
             onChange={(e) => set('taxSlab')(parseFloat(e.target.value))}
           >
@@ -478,7 +482,7 @@ export default function InputPanel({ inputs, onChange }) {
               <input
                 type="text"
                 inputMode="numeric"
-                className="w-full bg-[#f8faff] border border-border rounded-xl pl-7 pr-3 py-2 num text-sm text-text-primary focus:outline-none focus:border-accent-fd shadow-sm"
+                className="w-full bg-[#f8faff] border border-border rounded-xl pl-7 pr-3 py-2 num text-base text-text-primary focus:outline-none focus:border-accent-fd shadow-sm"
                 value={inputs.ltcgExemption ? inputs.ltcgExemption.toLocaleString('en-IN') : ''}
                 onChange={(e) => {
                   const n = e.target.value.replace(/[^0-9]/g, '')
@@ -533,7 +537,7 @@ export default function InputPanel({ inputs, onChange }) {
       </CollapsibleCard>
 
       <p className="text-[10px] text-text-muted text-center px-2">
-        Results on the right update live as you change these →
+        Results update live as you adjust these inputs
       </p>
     </div>
   )

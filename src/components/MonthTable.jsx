@@ -13,7 +13,9 @@ export default function MonthTable({ rows, baseWithdrawal }) {
 
   return (
     <div className="mt-3">
-      <p className="sm:hidden text-[10px] text-text-muted mb-1.5">Swipe the table sideways to see all columns →</p>
+      <p className="sm:hidden text-xs text-text-secondary mb-2 flex items-center gap-1">
+        <span>← Swipe sideways to see all columns →</span>
+      </p>
       <div className="overflow-auto max-h-[440px] rounded-lg border border-border/50">
       <table className="w-full text-xs border-collapse min-w-[600px]">
         <thead className="sticky top-0 z-10 bg-card">
