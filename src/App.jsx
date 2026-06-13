@@ -479,8 +479,8 @@ export default function App() {
         <div className="flex flex-col lg:flex-row gap-6">
 
           {/* Left — Inputs */}
-          <aside className="w-full lg:w-[320px] lg:flex-shrink-0">
-            <div className="lg:sticky lg:top-[56px] lg:max-h-[calc(100vh-64px)] lg:overflow-y-auto lg:pb-4">
+          <aside className="w-full lg:w-[340px] lg:flex-none">
+            <div className="lg:sticky lg:top-[56px] lg:h-[calc(100vh-56px)] lg:overflow-y-auto lg:pb-4">
               <InputPanel inputs={inputs} onChange={setInputs} />
             </div>
           </aside>
