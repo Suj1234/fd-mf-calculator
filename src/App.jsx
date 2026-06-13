@@ -431,6 +431,7 @@ export default function App() {
                   onScenarioChange={setActiveScenario}
                   monthlyWithdrawal={debouncedInputs.monthlyWithdrawal}
                   inflationRate={debouncedInputs.inflationRate}
+                  currentAge={debouncedInputs.currentAge}
                 />
 
                 {/* Tabbed results (Problem 2) */}

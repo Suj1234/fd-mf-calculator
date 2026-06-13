@@ -114,22 +114,15 @@ export default function HeroSummary({ scenarioA, scenarioB, activeScenario, curr
             {activeScenario === 'A' ? 'Fixed Withdrawal · Scenario A' : 'Inflation-Adjusted · Scenario B (recommended)'}
           </p>
 
-          {ageAtEnd ? (
-            <>
-              <p className={`font-bold leading-tight ${heroColor}`} style={{ fontSize: '3rem' }}>
-                Until age {ageAtEnd}
-              </p>
-              <p className="text-sm text-text-muted mt-2">
-                ({formatDuration(active.totalMonths)} from today)
-              </p>
-            </>
-          ) : (
-            <p
-              className={`num font-bold leading-none ${heroColor}`}
-              style={{ fontSize: perpetual ? '5rem' : '3.5rem' }}
-            >
-              {durationText}
-            </p>
+          <p
+            className={`num font-bold leading-none ${heroColor}`}
+            style={{ fontSize: perpetual ? '5rem' : '3.5rem' }}
+          >
+            {durationText}
+          </p>
+
+          {ageAtEnd && (
+            <p className="text-sm text-text-muted mt-2">until you're {ageAtEnd}</p>
           )}
 
           {subLabel && !ageAtEnd && (
