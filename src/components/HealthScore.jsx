@@ -41,14 +41,14 @@ export default function HealthScore({ inputs, result }) {
               Grade {hs.letter}
             </span>
           </div>
-          <p className="text-xs text-text-muted mt-0.5">Retirement health score</p>
+          <p className="text-xs text-text-muted mt-0.5">{hs.description}</p>
 
           {/* Safe withdrawal rate */}
           <div className="mt-3 flex items-center justify-between gap-3 bg-bg rounded-lg px-3 py-2">
             <div className="min-w-0">
-              <div className="text-[10px] text-text-muted uppercase tracking-wide">Withdrawal rate</div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wide">Annual withdrawal rate</div>
               <div className="text-[11px] text-text-secondary mt-0.5">
-                Safe range for Indian retirees: <span className="font-medium">4–5%</span>
+                % of total corpus withdrawn per year · safe: <span className="font-medium">4–5%</span>
               </div>
             </div>
             <div className="text-right flex-shrink-0">
@@ -56,6 +56,7 @@ export default function HealthScore({ inputs, result }) {
                 {(rate * 100).toFixed(1)}%
               </div>
               <div className="text-[10px] font-semibold" style={{ color: swr.color }}>{swr.label}</div>
+              <div className="text-[9px] text-text-muted mt-0.5">per year</div>
             </div>
           </div>
         </div>
@@ -72,6 +73,9 @@ export default function HealthScore({ inputs, result }) {
             <div className="h-1 bg-border rounded-full overflow-hidden mt-1.5">
               <div className="h-full rounded-full" style={{ width: `${(b.got / b.max) * 100}%`, backgroundColor: hs.color }} />
             </div>
+            {b.hint && (
+              <div className="text-[9px] text-text-muted mt-1 leading-tight">{b.hint}</div>
+            )}
           </div>
         ))}
       </div>

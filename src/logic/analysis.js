@@ -40,19 +40,38 @@ export function healthScore(inputs, result) {
   const score = Math.round(durationScore + swrScore + taxScore)
 
   const grade =
-    score >= 85 ? { letter: 'A', label: 'Excellent', color: '#059669' } :
-    score >= 70 ? { letter: 'B', label: 'Good',      color: '#059669' } :
-    score >= 55 ? { letter: 'C', label: 'Moderate',  color: '#d97706' } :
-    score >= 40 ? { letter: 'D', label: 'Weak',      color: '#ea580c' } :
-                  { letter: 'E', label: 'Critical',  color: '#dc2626' }
+    score >= 85 ? { letter: 'A', label: 'Excellent', color: '#059669', description: 'The corpus should comfortably outlast a 30+ year retirement at this pace.' } :
+    score >= 70 ? { letter: 'B', label: 'Good',      color: '#059669', description: 'A small reduction in withdrawal or a shift toward MF could push this to Excellent.' } :
+    score >= 55 ? { letter: 'C', label: 'Moderate',  color: '#d97706', description: 'The plan works, but has limited buffer — a rate drop or emergency could stretch things. The tips below add runway.' } :
+    score >= 40 ? { letter: 'D', label: 'Weak',      color: '#ea580c', description: 'The corpus runs out before the 25yr safety floor — but it\'s not a crisis. Even ₹10–20K/mo less makes a real difference.' } :
+                  { letter: 'E', label: 'Critical',  color: '#dc2626', description: 'At this pace the corpus depletes quickly. A significantly lower withdrawal or larger starting corpus is needed.' }
+
+  const monthsYrs = months === Infinity ? null : Math.round(months / 12)
+  const shortfall = monthsYrs !== null ? Math.max(0, 25 - monthsYrs) : 0
+  const durationHint = months === Infinity
+    ? 'corpus is self-sustaining — interest alone covers withdrawals'
+    : monthsYrs >= 25 ? `${monthsYrs} yr — meets the 25yr safety floor (plan from age 60 to 85)`
+    : shortfall === 1 ? `${monthsYrs} yr — just 1 year short of the 25yr safety floor`
+    : shortfall <= 5 ? `${monthsYrs} yr — ${shortfall} yr short of the 25yr safety floor`
+    : `${monthsYrs} yr — well below the 25yr safety floor; withdrawals outpace growth`
+
+  const swrHint = rate <= 0.04 ? `${(rate * 100).toFixed(1)}% yearly — within the 4–5% range where corpus typically lasts 25+ yr`
+    : rate <= 0.05 ? `${(rate * 100).toFixed(1)}% yearly — at the ceiling of the safe 4–5% range; manageable but watch for rate changes`
+    : rate <= 0.07 ? `${(rate * 100).toFixed(1)}% yearly — above 5%, so corpus growth may not fully keep up with withdrawals`
+    : `${(rate * 100).toFixed(1)}% yearly — at this rate the corpus shrinks faster than it can grow`
+
+  const taxRatePct = Math.round(taxRatio * 100)
+  const taxHint = taxRatePct <= 5 ? `${taxRatePct}% of total withdrawn goes to tax — very efficient`
+    : taxRatePct <= 12 ? `${taxRatePct}% of total withdrawn goes to tax — moderate; timing MF sales within LTCG limits helps`
+    : `${taxRatePct}% of total withdrawn goes to tax — significant drag; staggering MF redemptions can reduce this`
 
   return {
     score,
     ...grade,
     breakdown: [
-      { label: 'Longevity', got: Math.round(durationScore), max: 50 },
-      { label: 'Withdrawal rate', got: Math.round(swrScore), max: 35 },
-      { label: 'Tax efficiency', got: Math.round(taxScore), max: 15 },
+      { label: 'Longevity', got: Math.round((durationScore / 50) * 10), max: 10, hint: durationHint },
+      { label: 'Withdrawal rate', got: Math.round((swrScore / 35) * 10), max: 10, hint: swrHint },
+      { label: 'Tax efficiency', got: Math.round((taxScore / 15) * 10), max: 10, hint: taxHint },
     ],
   }
 }

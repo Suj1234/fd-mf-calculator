@@ -6,7 +6,6 @@ function durationLabel(scenarioB) {
   return scenarioB.perpetual ? 'Self-sustaining' : formatDuration(scenarioB.totalMonths || 0)
 }
 
-// Stepper row: a label, a −/+ pair around a centered value.
 function Lever({ label, value, onDec, onInc, decDisabled, incDisabled }) {
   return (
     <div className="flex items-center justify-between gap-3">
@@ -23,21 +22,27 @@ function Lever({ label, value, onDec, onInc, decDisabled, incDisabled }) {
 }
 
 export default function WhatIf({ inputs, baselineResult }) {
-  const [dWd, setDWd] = useState(0)      // ₹ change to monthly withdrawal
-  const [dFd, setDFd] = useState(0)      // change to FD fraction
+  const [dWd, setDWd] = useState(0)          // ₹ change to monthly withdrawal
+  const [dFd, setDFd] = useState(0)          // change to FD fraction
+  const [dCorpus, setDCorpus] = useState(0)  // ₹ change to total corpus
+  const [dInf, setDInf] = useState(0)        // change to inflation rate
 
   const newWithdrawal = Math.max(0, inputs.monthlyWithdrawal + dWd)
   const newFdPct = Math.min(1, Math.max(0, inputs.fdPct + dFd))
+  const newCorpus = Math.max(500000, inputs.totalCorpus + dCorpus)
+  const newInfRate = Math.min(0.20, Math.max(0.01, inputs.inflationRate + dInf))
 
   const patched = useMemo(() => ({
     ...inputs,
     monthlyWithdrawal: newWithdrawal,
     fdPct: newFdPct,
-    fdAmount: Math.round(inputs.totalCorpus * newFdPct),
-    mfAmount: Math.round(inputs.totalCorpus * (1 - newFdPct)),
-  }), [inputs, newWithdrawal, newFdPct])
+    totalCorpus: newCorpus,
+    fdAmount: Math.round(newCorpus * newFdPct),
+    mfAmount: Math.round(newCorpus * (1 - newFdPct)),
+    inflationRate: newInfRate,
+  }), [inputs, newWithdrawal, newFdPct, newCorpus, newInfRate])
 
-  const changed = dWd !== 0 || dFd !== 0
+  const changed = dWd !== 0 || dFd !== 0 || dCorpus !== 0 || dInf !== 0
   const newResult = useMemo(() => {
     try { return simulateAllPhases(patched) } catch { return null }
   }, [patched])
@@ -45,7 +50,6 @@ export default function WhatIf({ inputs, baselineResult }) {
   const baseB = baselineResult.scenarioB
   const newB = newResult?.scenarioB
 
-  // Delta in months (positive = lasts longer). Perpetual handled separately.
   let deltaText = null
   let deltaPositive = true
   if (changed && newB) {
@@ -66,7 +70,7 @@ export default function WhatIf({ inputs, baselineResult }) {
           <p className="text-[11px] text-text-muted mt-0.5">Try a change without touching your real inputs</p>
         </div>
         {changed && (
-          <button type="button" onClick={() => { setDWd(0); setDFd(0) }}
+          <button type="button" onClick={() => { setDWd(0); setDFd(0); setDCorpus(0); setDInf(0) }}
             className="text-[11px] text-accent-fd hover:underline flex-shrink-0">Reset</button>
         )}
       </div>
@@ -74,10 +78,17 @@ export default function WhatIf({ inputs, baselineResult }) {
       <div className="flex flex-col gap-3 mt-4">
         <Lever
           label="Monthly withdrawal"
-          value={`${formatCompact(newWithdrawal)}`}
+          value={`${formatCompact(newWithdrawal)}/mo`}
           onDec={() => setDWd((d) => d - 10000)}
           onInc={() => setDWd((d) => d + 10000)}
           decDisabled={newWithdrawal <= 10000}
+        />
+        <Lever
+          label="Total corpus"
+          value={formatCompact(newCorpus)}
+          onDec={() => setDCorpus((d) => d - 1000000)}
+          onInc={() => setDCorpus((d) => d + 1000000)}
+          decDisabled={newCorpus <= 500000}
         />
         <Lever
           label="FD allocation"
@@ -86,6 +97,14 @@ export default function WhatIf({ inputs, baselineResult }) {
           onInc={() => setDFd((d) => d + 0.05)}
           decDisabled={newFdPct <= 0}
           incDisabled={newFdPct >= 1}
+        />
+        <Lever
+          label="Inflation rate"
+          value={`${(newInfRate * 100).toFixed(1)}%`}
+          onDec={() => setDInf((d) => d - 0.005)}
+          onInc={() => setDInf((d) => d + 0.005)}
+          decDisabled={newInfRate <= 0.01}
+          incDisabled={newInfRate >= 0.20}
         />
       </div>
 
