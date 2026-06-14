@@ -182,8 +182,8 @@ function CollapsibleCard({ step, title, summary, open, onToggle, children }) {
 
 const Divider = () => <div className="h-px bg-border" />
 
-export default function InputPanel({ inputs, onChange }) {
-  const [corpusOpen,   setCorpusOpen]   = useState(false)
+export default function InputPanel({ inputs, onChange, isFromURL = false }) {
+  const [corpusOpen,   setCorpusOpen]   = useState(!isFromURL)
   const [spendingOpen, setSpendingOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
 

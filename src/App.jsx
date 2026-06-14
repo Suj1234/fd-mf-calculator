@@ -177,6 +177,7 @@ function EmptyState() {
 // ─── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const isFromURL = useRef(window.location.search.length > 1)
   const [inputs, setInputs] = useState(() => parseFromURL() || DEFAULT_INPUTS)
   const [debouncedInputs, setDebouncedInputs] = useState(inputs)
   const [activeScenario, setActiveScenario] = useState('B')
@@ -233,7 +234,7 @@ export default function App() {
             </div>
             <div className="min-w-0">
               <h1 className="text-sm font-semibold text-text-primary leading-none truncate">FD + MF Withdrawal Calculator</h1>
-              <p className="text-[10px] text-text-muted mt-0.5 hidden sm:block">FD + MF retirement simulator · Real Indian tax rules</p>
+              <p className="text-[11px] text-text-secondary mt-0.5">FD + MF retirement simulator · Real Indian tax rules</p>
             </div>
           </div>
 
@@ -576,7 +577,7 @@ export default function App() {
           {/* Left — Inputs */}
           <aside className="w-full lg:w-[340px] lg:flex-none">
             <div className="lg:sticky lg:top-[56px] lg:h-[calc(100vh-56px)] lg:overflow-y-auto lg:pb-4">
-              <InputPanel inputs={inputs} onChange={setInputs} />
+              <InputPanel inputs={inputs} onChange={setInputs} isFromURL={isFromURL.current} />
             </div>
           </aside>
 

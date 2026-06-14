@@ -25,7 +25,7 @@ export default function ResultTabs({ active, onChange, tabs, activeScenario }) {
         })}
         {/* Active scenario indicator — shows which scenario is active when ScenarioToggle has scrolled out of view */}
         {activeScenario && (
-          <div className="flex-shrink-0 flex items-center gap-1.5 pl-2.5 ml-0.5 border-l border-border/60 cursor-default select-none">
+          <div className="hidden sm:flex flex-shrink-0 items-center gap-1.5 pl-2.5 ml-0.5 border-l border-border/60 cursor-default select-none">
             <span className="text-[9px] text-text-muted/50 uppercase tracking-wide hidden sm:inline flex-shrink-0">Viewing:</span>
             <span
               className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg whitespace-nowrap ${
