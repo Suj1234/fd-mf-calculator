@@ -117,6 +117,14 @@ export default function TaxSummary({ phases, perpetual }) {
           </tfoot>
         </table>
       </div>
+
+      {/* Cess disclaimer */}
+      <div className="px-5 py-3 border-t border-border bg-[#f8faff]">
+        <p className="text-[10px] text-text-muted leading-relaxed">
+          <span className="font-semibold text-text-secondary">Note on LTCG tax:</span>{' '}
+          Amounts above already include the mandatory <span className="font-medium">4% Health &amp; Education Cess</span> levied on top of the 12.5% base rate — making the effective LTCG rate <span className="font-medium">13%</span>. FD interest tax does not include cess (offset against other income deductions in practice); consult your CA for your exact liability.
+        </p>
+      </div>
     </div>
   )
 }

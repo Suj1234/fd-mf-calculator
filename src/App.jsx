@@ -618,6 +618,7 @@ export default function App() {
               <li>No partial MF redemptions or FD laddering</li>
               <li>MF is sold only at the end of each FD cycle</li>
               <li>Return &amp; inflation rates held constant (long-run averages)</li>
+              <li>LTCG tax includes 4% Health &amp; Education Cess (effective rate: 13%); FD interest tax shown at slab rate only</li>
             </ul>
           </div>
           <div>
@@ -630,7 +631,7 @@ export default function App() {
           <div>
             <h4 className="text-[11px] font-semibold text-text-secondary uppercase tracking-wide mb-2">Last updated</h4>
             <p className="text-[11px] leading-relaxed">
-              Tax rules as of Budget 2024–25 (LTCG 12.5% above ₹1.25L/yr — unchanged in Budget 2025). FD rate default reflects SBI {CURRENT_SBI_FD.tenure} as of {CURRENT_SBI_FD.asOf}.
+              Tax rules as of Budget 2024–25 (LTCG 12.5% + 4% cess = 13% effective, above ₹1.25L/yr — unchanged in Budget 2025). FD rate default is SBI {CURRENT_SBI_FD.tenure} general-public rate ({(CURRENT_SBI_FD.rate * 100).toFixed(1)}%) as of {CURRENT_SBI_FD.asOf}; senior citizens receive an additional 0.5%.
             </p>
           </div>
         </div>

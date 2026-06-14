@@ -9,12 +9,13 @@ export function getFDRate(globalMonth, startRate, declineEnabled, declineRate, d
   return Math.max(rate, floor)
 }
 
-// Calculate LTCG tax at a phase transition
+// Calculate LTCG tax at a phase transition.
+// ltcgTax includes the mandatory 4% Health & Education Cess (effective rate = ltcgRate × 1.04).
 export function calcLTCG(mfCorpus, costBasis, ltcgEnabled, ltcgRate, ltcgExemption) {
   if (!ltcgEnabled || mfCorpus <= costBasis) return { taxableGains: 0, ltcgTax: 0, netProceeds: mfCorpus }
   const gains = mfCorpus - costBasis
   const taxableGains = Math.max(0, gains - ltcgExemption)
-  const ltcgTax = taxableGains * ltcgRate
+  const ltcgTax = taxableGains * ltcgRate * 1.04
   return { taxableGains, ltcgTax, netProceeds: mfCorpus - ltcgTax }
 }
 
@@ -147,6 +148,9 @@ function simulateScenario({
   let perpetual = false
   let perpetualPhase = null
   let incomingLtcgTax = 0
+  // Track how much of the ₹1.25L annual LTCG exemption has been used per simulation year.
+  // Multiple FD phases ending in the same 12-month window share one annual exemption.
+  const yearlyExemptionUsed = {}
 
   for (let phaseIdx = 0; phaseIdx < MAX_PHASES; phaseIdx++) {
     if (fdPrincipal <= 0 && mfCorpus <= 0) break
@@ -172,8 +176,9 @@ function simulateScenario({
     const fdMonths = correctedRows.length
     const fdRateAtEnd = getFDRate(globalMonth + fdMonths - 1, fdStartRate, fdDeclineEnabled, fdDeclineRate, fdDeclinePeriod, fdFloor)
 
-    // MF compounds untouched during FD phase
-    const mfMonthlyRate = mfRate / 12
+    // MF compounds untouched during FD phase.
+    // Use (1+r)^(1/12)-1 so the stated annual CAGR is the true effective rate.
+    const mfMonthlyRate = Math.pow(1 + mfRate, 1 / 12) - 1
     const mfEndNominal = mfCorpus * Math.pow(1 + mfMonthlyRate, fdMonths)
     // MF cost basis tracks the original investment
     const mfEndCostBasis = mfCostBasis
@@ -233,7 +238,17 @@ function simulateScenario({
     const keepMF = mfEndNominal * (1 - sellPct)
     const sellCostBasis = mfEndCostBasis * sellPct
     const keepCostBasis = mfEndCostBasis * (1 - sellPct)
-    const { taxableGains, ltcgTax, netProceeds } = calcLTCG(sellMF, sellCostBasis, ltcgEnabled, ltcgRate, ltcgExemption)
+
+    // The ₹1.25L LTCG exemption is per financial year, not per phase.
+    // If two phases end in the same 12-month simulation window they share one exemption.
+    const saleYearIdx = Math.floor((globalMonth + fdMonths) / 12)
+    const usedThisYear = yearlyExemptionUsed[saleYearIdx] || 0
+    const effectiveExemption = Math.max(0, ltcgExemption - usedThisYear)
+    const { taxableGains, ltcgTax, netProceeds } = calcLTCG(sellMF, sellCostBasis, ltcgEnabled, ltcgRate, effectiveExemption)
+    if (ltcgEnabled && sellMF > sellCostBasis) {
+      const gains = sellMF - sellCostBasis
+      yearlyExemptionUsed[saleYearIdx] = usedThisYear + Math.min(gains, effectiveExemption)
+    }
 
     const nextFD = netProceeds
     const nextMF = keepMF

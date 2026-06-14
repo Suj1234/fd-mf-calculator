@@ -5,7 +5,7 @@ export const DEFAULT_INPUTS = {
   fdAmount: 15000000,
   mfAmount: 15000000,
   monthlyWithdrawal: 175000,
-  fdStartRate: 0.069,
+  fdStartRate: 0.064,
   mfRate: 0.12,
   inflationRate: 0.06,
   taxSlab: 0.30,
@@ -20,7 +20,8 @@ export const DEFAULT_INPUTS = {
 
 // Reference FD rate surfaced as a one-click "use current rate" button.
 // Update the rate + asOf each quarter (no public CORS API exists to fetch live).
-export const CURRENT_SBI_FD = { rate: 0.069, asOf: 'Jun 2026', tenure: '2–3 yr' }
+export const CURRENT_SBI_FD = { rate: 0.064, asOf: 'Jun 2026', tenure: '2–3 yr' }
+// Senior citizens get an additional 0.5% premium: 6.9% as of Jun 2026.
 
 // Plain-language definitions for jargon, shown via the <Term> tooltip (P22).
 export const GLOSSARY = {
@@ -32,7 +33,7 @@ export const GLOSSARY = {
 }
 
 export const TOOLTIPS = {
-  fdStartRate: 'SBI 2–3yr FD: 7.0% (2023) → 6.9% (Apr 2025). Rates have declined ~2% over 15 years.',
+  fdStartRate: 'SBI 2–3yr FD (general public): 6.4% as of Jun 2026. Senior citizens get an extra 0.5% (6.9%). Rates have declined ~2% over 15 years.',
   mfRate: 'Nifty 50 15-yr CAGR: ~12–13%. Includes bear markets of 2008, 2020.',
   inflationRate: 'RBI CPI target: 4% (±2%). India 5yr avg: ~5.5–6%. Use 7% for conservative planning.',
   taxSlab: 'Your income tax slab on FD interest income. FD interest is taxed as regular income.',
