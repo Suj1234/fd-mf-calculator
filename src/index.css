@@ -8,6 +8,7 @@
 
 body {
   margin: 0;
+  overflow-x: hidden;
   background: #f0f4fb;
   color: #0f172a;
   font-family: 'Inter', system-ui, sans-serif;
@@ -15,7 +16,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-#root { min-height: 100vh; }
+#root { min-height: 100vh; overflow-x: hidden; }
 
 /* Financial numbers — monospace, tabular */
 .num {

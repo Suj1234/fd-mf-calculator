@@ -316,42 +316,28 @@ export default function App() {
               </button>
             </div>
 
-            {/* Arrow centering: items-stretch makes arrows fill the step height;
-                pt-7 offsets past the title row (h-5=20px + gap-2=8px = 28px),
-                then items-center places the arrow at the vertical center of the box. */}
-            <div className="flex flex-col sm:flex-row sm:items-stretch gap-4 sm:gap-3">
+            {/* ── MOBILE layout: vertical stack with right-side cycle bracket ── */}
+            <div className="flex flex-col gap-3 sm:hidden">
 
               {/* Step 1 */}
-              <div className="flex-1 flex flex-col gap-2 min-w-0">
+              <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-1.5">
                   <span className="w-5 h-5 rounded-full bg-accent-fd text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">1</span>
                   <span className="text-xs font-bold text-text-primary">Split your corpus</span>
                 </div>
                 <div className="bg-bg border border-border rounded-xl p-3 flex flex-col gap-2">
-                  {/* Dynamic split bar — width + label reflect actual fdPct */}
                   <div className="flex h-6 rounded-md overflow-hidden">
                     {inputs.fdPct > 0 && (
-                      <div
-                        className="bg-accent-fd flex items-center justify-center"
-                        style={{ width: `${Math.round(inputs.fdPct * 100)}%` }}
-                      >
-                        {Math.round(inputs.fdPct * 100) >= 18 && (
-                          <span className="text-[9px] text-white font-semibold">FD {Math.round(inputs.fdPct * 100)}%</span>
-                        )}
+                      <div className="bg-accent-fd flex items-center justify-center" style={{ width: `${Math.round(inputs.fdPct * 100)}%` }}>
+                        {Math.round(inputs.fdPct * 100) >= 18 && <span className="text-[9px] text-white font-semibold">FD {Math.round(inputs.fdPct * 100)}%</span>}
                       </div>
                     )}
                     {inputs.fdPct < 1 && (
-                      <div
-                        className="bg-accent-mf flex items-center justify-center"
-                        style={{ width: `${Math.round((1 - inputs.fdPct) * 100)}%` }}
-                      >
-                        {Math.round((1 - inputs.fdPct) * 100) >= 18 && (
-                          <span className="text-[9px] text-white font-semibold">MF {Math.round((1 - inputs.fdPct) * 100)}%</span>
-                        )}
+                      <div className="bg-accent-mf flex items-center justify-center" style={{ width: `${Math.round((1 - inputs.fdPct) * 100)}%` }}>
+                        {Math.round((1 - inputs.fdPct) * 100) >= 18 && <span className="text-[9px] text-white font-semibold">MF {Math.round((1 - inputs.fdPct) * 100)}%</span>}
                       </div>
                     )}
                   </div>
-                  {/* Corpus amounts — always show, with description below to match Step 2 & 3 card heights */}
                   {inputs.totalCorpus > 0 && (
                     <p className="text-[10px] text-text-muted leading-none">
                       <span className="font-semibold text-accent-fd">{formatCompact(inputs.fdAmount)}</span> FD ·{' '}
@@ -365,96 +351,205 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Desktop arrow — pt-7 offsets past title row, items-center centers in box height */}
-              <div className="flex-shrink-0 hidden sm:flex items-center pt-7 text-text-muted font-bold text-base">→</div>
-              <div className="text-center text-text-muted font-bold text-base sm:hidden">↓</div>
+              {/* Arrow: Step 1 → cycle */}
+              <div className="text-center text-text-muted text-sm leading-none">↓</div>
 
-              {/* Step 2 */}
-              <div className="flex-1 flex flex-col gap-2 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-full bg-accent-mf text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">2</span>
-                  <span className="text-xs font-bold text-text-primary">Live off your FD</span>
-                </div>
-                <div className="bg-bg border border-border rounded-xl p-3 flex flex-col gap-2">
-                  <span className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-accent-fd/10 text-accent-fd border border-accent-fd/20 self-start">
-                    FD {(debouncedInputs.fdStartRate * 100).toFixed(1)}% → {inputs.monthlyWithdrawal > 0 ? formatCompact(inputs.monthlyWithdrawal) : '₹X'}/mo to you
-                  </span>
-                  <p className="text-[11px] text-text-secondary leading-relaxed">
-                    Withdraw from FD each month. MF compounds untouched at{' '}
-                    <span className="font-medium">{(debouncedInputs.mfRate * 100).toFixed(0)}% CAGR</span>{' '}
-                    — years of undisturbed growth.
-                  </p>
-                </div>
-              </div>
+              {/* Steps 2 + 3 wrapped in right-side cycle bracket */}
+              <div className="relative">
+                {/* Right-side dashed bracket: visually connects Step 3 back up to Step 2 */}
+                <div
+                  className="absolute top-5 bottom-5 pointer-events-none"
+                  style={{
+                    right: 0,
+                    width: 12,
+                    borderTop: '1.5px dashed rgba(5,150,105,0.45)',
+                    borderRight: '1.5px dashed rgba(5,150,105,0.45)',
+                    borderBottom: '1.5px dashed rgba(5,150,105,0.45)',
+                    borderRadius: '0 7px 7px 0',
+                  }}
+                />
+                <div className="pr-5 flex flex-col gap-2">
 
-              <div className="flex-shrink-0 hidden sm:flex items-center pt-7 text-text-muted font-bold text-base">→</div>
-              <div className="text-center text-text-muted font-bold text-base sm:hidden">↓</div>
-
-              {/* Step 3 */}
-              <div className="flex-1 flex flex-col gap-2 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-full bg-accent-fd text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">3</span>
-                  <span className="text-xs font-bold text-text-primary">Refill FD from MF</span>
-                </div>
-                <div className="bg-bg border border-border rounded-xl p-3 flex flex-col gap-2">
-                  <div className="flex items-center gap-1 flex-wrap">
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-mf/10 text-accent-mf border border-accent-mf/20">Sell MF</span>
-                    <span className="text-text-muted text-xs">→</span>
-                    {debouncedInputs.ltcgEnabled ? (
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-tax/10 text-accent-tax border border-accent-tax/20">
-                        Pay LTCG {(debouncedInputs.ltcgRate * 100).toFixed(1)}%
+                  {/* Step 2 */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-5 h-5 rounded-full bg-accent-mf text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">2</span>
+                      <span className="text-xs font-bold text-text-primary">Live off your FD</span>
+                    </div>
+                    <div className="bg-bg border border-border rounded-xl p-3 flex flex-col gap-2">
+                      <span className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-accent-fd/10 text-accent-fd border border-accent-fd/20 self-start">
+                        FD {(debouncedInputs.fdStartRate * 100).toFixed(1)}% → {inputs.monthlyWithdrawal > 0 ? formatCompact(inputs.monthlyWithdrawal) : '₹X'}/mo to you
                       </span>
-                    ) : (
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-border text-text-muted">
-                        No LTCG tax
-                      </span>
-                    )}
-                    <span className="text-text-muted text-xs">→</span>
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-fd/10 text-accent-fd border border-accent-fd/20">New FD</span>
+                      <p className="text-[11px] text-text-secondary leading-relaxed">
+                        Withdraw from FD each month. MF compounds untouched at{' '}
+                        <span className="font-medium">{(debouncedInputs.mfRate * 100).toFixed(0)}% CAGR</span> — years of undisturbed growth.
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-[11px] text-text-secondary leading-relaxed">
-                    {result?.scenarioB?.phases?.[0]
-                      ? <>FD depletes in <span className="font-medium">{formatDuration(result.scenarioB.phases[0].fdMonths)}</span>.</>
-                      : 'FD runs out in ~5–8 yrs.'
-                    }{' '}
-                    Sell MF → pay tax → open a new,{' '}
-                    {result?.scenarioB?.phases?.[0] && result.scenarioB.phases[1]
-                      ? <span className="font-medium">
-                          {result.scenarioB.phases[1].fdPrincipal > result.scenarioB.phases[0].fdPrincipal
-                            ? 'often bigger'
-                            : 'next'}{' '}
-                          FD ({formatCompact(result.scenarioB.phases[1].fdPrincipal)})
-                        </span>
-                      : <span className="font-medium">new FD</span>
-                    }.
-                  </p>
+
+                  {/* Arrow: Step 2 → Step 3 */}
+                  <div className="text-center text-text-muted text-sm leading-none">↓</div>
+
+                  {/* Step 3 */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-5 h-5 rounded-full bg-accent-fd text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">3</span>
+                      <span className="text-xs font-bold text-text-primary">Refill FD from MF</span>
+                    </div>
+                    <div className="bg-bg border border-border rounded-xl p-3 flex flex-col gap-2">
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-mf/10 text-accent-mf border border-accent-mf/20">Sell MF</span>
+                        <span className="text-text-muted text-xs">→</span>
+                        {debouncedInputs.ltcgEnabled ? (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-tax/10 text-accent-tax border border-accent-tax/20">
+                            Pay LTCG {(debouncedInputs.ltcgRate * 100).toFixed(1)}%
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-border text-text-muted">No LTCG tax</span>
+                        )}
+                        <span className="text-text-muted text-xs">→</span>
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-fd/10 text-accent-fd border border-accent-fd/20">New FD</span>
+                      </div>
+                      <p className="text-[11px] text-text-secondary leading-relaxed">
+                        {result?.scenarioB?.phases?.[0]
+                          ? <>FD depletes in <span className="font-medium">{formatDuration(result.scenarioB.phases[0].fdMonths)}</span>.</>
+                          : 'FD runs out in ~5–8 yrs.'}
+                        {' '}Sell MF → pay tax → open a new,{' '}
+                        {result?.scenarioB?.phases?.[0] && result.scenarioB.phases[1]
+                          ? <span className="font-medium">
+                              {result.scenarioB.phases[1].fdPrincipal > result.scenarioB.phases[0].fdPrincipal ? 'often bigger' : 'next'}{' '}
+                              FD ({formatCompact(result.scenarioB.phases[1].fdPrincipal)})
+                            </span>
+                          : <span className="font-medium">new FD</span>}.
+                      </p>
+                    </div>
+                  </div>
+
                 </div>
               </div>
-            </div>
 
-            {/* Loop-back: U-bracket showing Step 3 feeds back into Step 2 */}
-            {/* Mobile: simple text; Desktop: full U-bracket diagram */}
-            <div className="mt-3 sm:hidden text-center">
-              <p className="text-[10px] font-semibold text-accent-mf">
+              {/* Cycle-back label — sits right of the bracket's bottom edge */}
+              <div className="flex items-center justify-end gap-1 pr-1">
+                <span className="text-[9px] text-accent-mf font-semibold">↑ New FD opens · back to Step 2</span>
+              </div>
+              <p className="text-center text-[10px] font-semibold text-accent-mf">
                 ↺ Sell % of MF → pay LTCG tax → open new FD → repeat
               </p>
             </div>
-            <div className="hidden sm:flex gap-3 mt-1">
-              {/* Empty placeholder covering Step 1 + arrow */}
-              <div className="flex-1" />
-              <div className="w-4 flex-shrink-0" />
-              {/* U-bracket spanning Steps 2 and 3 */}
-              <div className="flex-1" style={{ flex: '2 1 0%' }}>
-                <div className="flex justify-between px-1 mb-0.5">
-                  <span className="text-[9px] font-semibold text-accent-mf">↑ New FD opens</span>
-                  <span className="text-[9px] text-text-muted">FD runs out ↓</span>
+
+            {/* ── DESKTOP layout: horizontal with U-bracket ── */}
+            <div className="hidden sm:block">
+              <div className="flex items-stretch gap-3">
+
+                {/* Step 1 */}
+                <div className="flex-1 flex flex-col gap-2 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-accent-fd text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">1</span>
+                    <span className="text-xs font-bold text-text-primary">Split your corpus</span>
+                  </div>
+                  <div className="bg-bg border border-border rounded-xl p-3 flex flex-col gap-2">
+                    <div className="flex h-6 rounded-md overflow-hidden">
+                      {inputs.fdPct > 0 && (
+                        <div className="bg-accent-fd flex items-center justify-center" style={{ width: `${Math.round(inputs.fdPct * 100)}%` }}>
+                          {Math.round(inputs.fdPct * 100) >= 18 && <span className="text-[9px] text-white font-semibold">FD {Math.round(inputs.fdPct * 100)}%</span>}
+                        </div>
+                      )}
+                      {inputs.fdPct < 1 && (
+                        <div className="bg-accent-mf flex items-center justify-center" style={{ width: `${Math.round((1 - inputs.fdPct) * 100)}%` }}>
+                          {Math.round((1 - inputs.fdPct) * 100) >= 18 && <span className="text-[9px] text-white font-semibold">MF {Math.round((1 - inputs.fdPct) * 100)}%</span>}
+                        </div>
+                      )}
+                    </div>
+                    {inputs.totalCorpus > 0 && (
+                      <p className="text-[10px] text-text-muted leading-none">
+                        <span className="font-semibold text-accent-fd">{formatCompact(inputs.fdAmount)}</span> FD ·{' '}
+                        <span className="font-semibold text-accent-mf">{formatCompact(inputs.mfAmount)}</span> MF
+                      </p>
+                    )}
+                    <p className="text-[11px] text-text-secondary leading-relaxed">
+                      <span className="font-semibold text-accent-fd">FD</span> = stable monthly income.{' '}
+                      <span className="font-semibold text-accent-mf">MF</span> = untouched growth engine. You control the split.
+                    </p>
+                  </div>
                 </div>
-                <div className="border-l-2 border-b-2 border-r-2 border-dashed border-accent-mf/35 rounded-b-xl h-3" />
-                <p className="text-center text-[10px] font-semibold text-accent-mf mt-1.5">↺ Sell % of MF → pay LTCG tax → open new FD → withdraw monthly → leave rest of MF untouched. Repeat.</p>
+
+                <div className="flex-shrink-0 flex items-center pt-7 text-text-muted font-bold text-base">→</div>
+
+                {/* Step 2 */}
+                <div className="flex-1 flex flex-col gap-2 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-accent-mf text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">2</span>
+                    <span className="text-xs font-bold text-text-primary">Live off your FD</span>
+                  </div>
+                  <div className="bg-bg border border-border rounded-xl p-3 flex flex-col gap-2">
+                    <span className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-accent-fd/10 text-accent-fd border border-accent-fd/20 self-start">
+                      FD {(debouncedInputs.fdStartRate * 100).toFixed(1)}% → {inputs.monthlyWithdrawal > 0 ? formatCompact(inputs.monthlyWithdrawal) : '₹X'}/mo to you
+                    </span>
+                    <p className="text-[11px] text-text-secondary leading-relaxed">
+                      Withdraw from FD each month. MF compounds untouched at{' '}
+                      <span className="font-medium">{(debouncedInputs.mfRate * 100).toFixed(0)}% CAGR</span>{' '}
+                      — years of undisturbed growth.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex-shrink-0 flex items-center pt-7 text-text-muted font-bold text-base">→</div>
+
+                {/* Step 3 */}
+                <div className="flex-1 flex flex-col gap-2 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-accent-fd text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">3</span>
+                    <span className="text-xs font-bold text-text-primary">Refill FD from MF</span>
+                  </div>
+                  <div className="bg-bg border border-border rounded-xl p-3 flex flex-col gap-2">
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-mf/10 text-accent-mf border border-accent-mf/20">Sell MF</span>
+                      <span className="text-text-muted text-xs">→</span>
+                      {debouncedInputs.ltcgEnabled ? (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-tax/10 text-accent-tax border border-accent-tax/20">
+                          Pay LTCG {(debouncedInputs.ltcgRate * 100).toFixed(1)}%
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-border text-text-muted">No LTCG tax</span>
+                      )}
+                      <span className="text-text-muted text-xs">→</span>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent-fd/10 text-accent-fd border border-accent-fd/20">New FD</span>
+                    </div>
+                    <p className="text-[11px] text-text-secondary leading-relaxed">
+                      {result?.scenarioB?.phases?.[0]
+                        ? <>FD depletes in <span className="font-medium">{formatDuration(result.scenarioB.phases[0].fdMonths)}</span>.</>
+                        : 'FD runs out in ~5–8 yrs.'
+                      }{' '}
+                      Sell MF → pay tax → open a new,{' '}
+                      {result?.scenarioB?.phases?.[0] && result.scenarioB.phases[1]
+                        ? <span className="font-medium">
+                            {result.scenarioB.phases[1].fdPrincipal > result.scenarioB.phases[0].fdPrincipal ? 'often bigger' : 'next'}{' '}
+                            FD ({formatCompact(result.scenarioB.phases[1].fdPrincipal)})
+                          </span>
+                        : <span className="font-medium">new FD</span>}.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Desktop U-bracket: cycle loop from Step 3 back to Step 2 */}
+              <div className="flex gap-3 mt-1">
+                <div className="flex-1" />
+                <div className="w-4 flex-shrink-0" />
+                <div className="flex-1" style={{ flex: '2 1 0%' }}>
+                  <div className="flex justify-between px-1 mb-0.5">
+                    <span className="text-[9px] font-semibold text-accent-mf">↑ New FD opens</span>
+                    <span className="text-[9px] text-text-muted">FD runs out ↓</span>
+                  </div>
+                  <div className="border-l-2 border-b-2 border-r-2 border-dashed border-accent-mf/35 rounded-b-xl h-3" />
+                  <p className="text-center text-[10px] font-semibold text-accent-mf mt-1.5">
+                    ↺ Sell % of MF → pay LTCG tax → open new FD → withdraw monthly → leave rest of MF untouched. Repeat.
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Two outcomes */}
+            {/* Two outcomes — shared across mobile and desktop */}
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
                 <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0 mt-1.5" />
