@@ -16,6 +16,14 @@ export const DEFAULT_INPUTS = {
   fdFloor: 0.055,
   ltcgRate: 0.125,
   ltcgExemption: 125000,
+  otherIncomeStreams: [],
+  // Bucket 3: null = disabled. When set: { amount, cagr, taxType ('slab'|'ltcg'), label }
+  bucket3: null,
+  // Surcharge: fraction (0 | 0.10 | 0.15 | 0.25). Applied on top of taxSlab for FD tax,
+  // and on LTCG rate (capped at 15% per IT rules).
+  surchargePct: 0,
+  // Joint portfolio: doubles LTCG exemption (husband + wife each get ₹1.25L)
+  jointPortfolio: false,
 }
 
 // Reference FD rate surfaced as a one-click "use current rate" button.

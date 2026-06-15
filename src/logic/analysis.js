@@ -1,10 +1,18 @@
 import { simulateAllPhases } from './calculator'
 
 // ─── Safe withdrawal rate ───────────────────────────────────────────────────
-// The Indian equivalent of the "4% rule": annual withdrawals ÷ corpus.
+// Net annual corpus draw ÷ corpus. Uses net withdrawal (gross minus year-1 other income)
+// because that is what the corpus actually has to supply.
 export function withdrawalRate(inputs) {
-  if (!inputs.totalCorpus) return 0
-  return (inputs.monthlyWithdrawal * 12) / inputs.totalCorpus
+  // Include Bucket 3 in total corpus for an accurate SWR measurement
+  const totalWithB3 = (inputs.totalCorpus || 0) + (inputs.bucket3?.amount || 0)
+  if (!totalWithB3) return 0
+  const streams = inputs.otherIncomeStreams || []
+  const year1Income = streams
+    .filter(s => (s.startMonth || 0) === 0 && (s.monthlyAmount || 0) > 0)
+    .reduce((sum, s) => sum + s.monthlyAmount, 0)
+  const netMonthly = Math.max(0, inputs.monthlyWithdrawal - year1Income)
+  return (netMonthly * 12) / totalWithB3
 }
 
 export function swrZone(rate) {
@@ -33,7 +41,9 @@ export function healthScore(inputs, result) {
   const swrScore = Math.max(0, Math.min(35, ((0.10 - rate) / (0.10 - 0.04)) * 35))
 
   const b = result.scenarioB
-  const taxRatio = b.totalNomWd > 0 ? b.totalTax / b.totalNomWd : 0
+  // Use gross spending (if available) for tax ratio so income streams don't inflate the metric
+  const grossBase = b.totalGrossExpense || b.totalNomWd
+  const taxRatio = grossBase > 0 ? b.totalTax / grossBase : 0
   // 5% tax drag → full marks, 20%+ → zero.
   const taxScore = Math.max(0, Math.min(15, ((0.20 - taxRatio) / (0.20 - 0.05)) * 15))
 

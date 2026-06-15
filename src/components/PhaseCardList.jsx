@@ -7,7 +7,7 @@ import PhaseCard from './PhaseCard'
 // add a dozen near-identical cards. (Blueprint Problem 7.)
 const MICRO_MONTHS = 6
 
-export default function PhaseCardList({ phases, baseWithdrawal, scenarioKey }) {
+export default function PhaseCardList({ phases, baseWithdrawal, scenarioKey, bucket3 = null }) {
   const [expandMicro, setExpandMicro] = useState(false)
 
   // Micro-cycles only cluster at the tail (cycles keep shrinking to depletion),
@@ -31,6 +31,7 @@ export default function PhaseCardList({ phases, baseWithdrawal, scenarioKey }) {
           key={`${scenarioKey}-${i}`}
           phase={phase}
           baseWithdrawal={baseWithdrawal}
+          bucket3={bucket3}
         />
       ))}
 
@@ -43,6 +44,7 @@ export default function PhaseCardList({ phases, baseWithdrawal, scenarioKey }) {
                 phase={phase}
                 index={meaningful.length + i}
                 baseWithdrawal={baseWithdrawal}
+                bucket3={bucket3}
               />
             ))}
             <button

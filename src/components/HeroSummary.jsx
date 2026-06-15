@@ -74,7 +74,7 @@ function StatCell({ label, value, sub, subClass = 'text-text-muted', valueClass 
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
-export default function HeroSummary({ scenarioA, scenarioB, activeScenario, currentAge, monthlyWithdrawal, inflationRate }) {
+export default function HeroSummary({ scenarioA, scenarioB, activeScenario, currentAge, monthlyWithdrawal, inflationRate, monthlyOtherIncome = 0 }) {
   const active = activeScenario === 'A' ? scenarioA : scenarioB
   const perpetual = active.perpetual
 
@@ -105,6 +105,13 @@ export default function HeroSummary({ scenarioA, scenarioB, activeScenario, curr
   const buyingPower30 = monthlyWithdrawal && inflationRate
     ? Math.round(monthlyWithdrawal / Math.pow(1 + inflationRate, 30))
     : null
+
+  // Income coverage stats (only when other income is configured)
+  const netFromCorpus = Math.max(0, monthlyWithdrawal - monthlyOtherIncome)
+  const coveragePct   = monthlyWithdrawal > 0
+    ? Math.round((Math.min(monthlyOtherIncome, monthlyWithdrawal) / monthlyWithdrawal) * 100)
+    : 0
+  const hasOtherIncome = monthlyOtherIncome > 0
 
 
   return (
@@ -170,10 +177,11 @@ export default function HeroSummary({ scenarioA, scenarioB, activeScenario, curr
           ) : (
             <StatCell label="Final MF value" value={formatCompact(active.finalMF)} valueClass="text-accent-mf" />
           )}
-          {/* 2. Total withdrawn — money you successfully spent */}
+          {/* 2. Total withdrawn from corpus */}
           <StatCell
-            label="Total withdrawn"
+            label={hasOtherIncome ? 'Drawn from corpus' : 'Total withdrawn'}
             value={formatCompact(active.totalNomWd)}
+            sub={hasOtherIncome ? 'other income covered rest' : undefined}
             valueClass="text-accent-wd"
           />
           {/* 4. Tax paid — informational, not a danger; neutral so it doesn't read as a loss */}
@@ -194,6 +202,36 @@ export default function HeroSummary({ scenarioA, scenarioB, activeScenario, curr
                 : 'sustainable withdrawal pace'}
           />
         </div>
+
+        {/* Income coverage banner — only shown when other income is configured */}
+        {hasOtherIncome && (
+          <div className="border-t border-emerald-100 bg-emerald-50 px-4 py-3">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Income coverage</span>
+              <span className="text-[10px] font-semibold text-emerald-600">{coveragePct}% of expenses covered</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1 text-center mb-2">
+              <div>
+                <div className="num text-xs font-semibold text-text-primary">{formatCompact(monthlyWithdrawal)}</div>
+                <div className="text-[9px] text-text-muted mt-0.5">Monthly expenses</div>
+              </div>
+              <div>
+                <div className="num text-xs font-semibold text-emerald-600">−{formatCompact(monthlyOtherIncome)}</div>
+                <div className="text-[9px] text-text-muted mt-0.5">Other income</div>
+              </div>
+              <div>
+                <div className="num text-xs font-semibold text-accent-fd">{formatCompact(netFromCorpus)}</div>
+                <div className="text-[9px] text-text-muted mt-0.5">From corpus</div>
+              </div>
+            </div>
+            <div className="h-1.5 rounded-full bg-emerald-100 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-emerald-500 transition-all duration-300"
+                style={{ width: `${Math.min(100, coveragePct)}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

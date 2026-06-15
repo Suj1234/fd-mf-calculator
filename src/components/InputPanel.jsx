@@ -182,12 +182,201 @@ function CollapsibleCard({ step, title, summary, open, onToggle, children }) {
 
 const Divider = () => <div className="h-px bg-border" />
 
+// ─── Income stream helpers ─────────────────────────────────────────────────────
+
+const INCOME_PRESETS = [
+  { icon: '🏛', label: 'Govt Pension',   inflationLinked: true,  startMonth: 0, endMonth: null },
+  { icon: '🏠', label: 'Rental Income',  inflationLinked: true,  startMonth: 0, endMonth: null },
+  { icon: '📄', label: 'Annuity',        inflationLinked: false, startMonth: 0, endMonth: null },
+  { icon: '💼', label: 'Consulting',     inflationLinked: false, startMonth: 0, endMonth: 120  },
+  { icon: '➕', label: 'Other',          inflationLinked: false, startMonth: 0, endMonth: null },
+]
+
+const START_OPTIONS = [
+  { label: 'At retirement',   months: 0   },
+  { label: 'After 1 year',    months: 12  },
+  { label: 'After 2 years',   months: 24  },
+  { label: 'After 5 years',   months: 60  },
+  { label: 'After 10 years',  months: 120 },
+]
+
+const END_OPTIONS = [
+  { label: 'Never (permanent)',  months: null },
+  { label: 'After 5 years',      months: 60   },
+  { label: 'After 10 years',     months: 120  },
+  { label: 'After 15 years',     months: 180  },
+  { label: 'After 20 years',     months: 240  },
+  { label: 'After 25 years',     months: 300  },
+]
+
+function streamIcon(label = '') {
+  const l = label.toLowerCase()
+  if (l.includes('pension') || l.includes('govt')) return '🏛'
+  if (l.includes('rent') || l.includes('property')) return '🏠'
+  if (l.includes('annuity') || l.includes('lic') || l.includes('nps')) return '📄'
+  if (l.includes('consult') || l.includes('freelance') || l.includes('work')) return '💼'
+  return '₹'
+}
+
+function IncomeStreamCard({ stream, onChange, onDelete }) {
+  const [expanded, setExpanded] = useState(!stream.monthlyAmount)
+
+  return (
+    <div className="border border-border rounded-xl overflow-hidden bg-[#f8faff]">
+      {/* Header row — always visible, full touch target */}
+      <button
+        type="button"
+        className="w-full flex items-center gap-2.5 px-3 py-3 text-left hover:bg-card-hover transition-colors"
+        onClick={() => setExpanded(e => !e)}
+      >
+        <span className="text-base flex-shrink-0 leading-none">{streamIcon(stream.label)}</span>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-semibold text-text-primary truncate">
+            {stream.label || 'Income Source'}
+          </div>
+          <div className="text-[10px] text-text-muted mt-0.5">
+            {stream.monthlyAmount > 0
+              ? `${formatCompact(stream.monthlyAmount)}/mo${stream.inflationLinked ? ' · grows with inflation' : ''}`
+              : 'Tap to enter amount'}
+          </div>
+        </div>
+        {/* Delete — 44px touch area, separated so it doesn't trigger expand */}
+        <span
+          role="button"
+          tabIndex={0}
+          aria-label="Remove"
+          onClick={e => { e.stopPropagation(); onDelete() }}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onDelete() } }}
+          className="w-10 h-10 flex items-center justify-center text-text-muted hover:text-red-500 rounded-lg flex-shrink-0 text-lg leading-none cursor-pointer"
+        >
+          ×
+        </span>
+        <svg
+          width="11" height="11" viewBox="0 0 12 12" fill="none"
+          className={`flex-shrink-0 text-text-muted transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+        >
+          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+
+      {/* Expanded form */}
+      {expanded && (
+        <div className="border-t border-border px-3 pb-4 pt-3 flex flex-col gap-3 bg-white">
+          {/* Label */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-medium text-text-muted">Income source name</label>
+            <input
+              type="text"
+              className="w-full bg-[#f8faff] border border-border rounded-xl px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent-fd focus:ring-2 focus:ring-accent-fd/20 shadow-sm"
+              value={stream.label}
+              onChange={e => onChange({ ...stream, label: e.target.value })}
+              placeholder="e.g. Government Pension"
+            />
+          </div>
+
+          {/* Amount */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-medium text-text-muted">Monthly amount (post-tax, in today's ₹)</label>
+            <MoneyInput
+              value={stream.monthlyAmount}
+              onChange={v => onChange({ ...stream, monthlyAmount: v })}
+              accentBorder="focus:border-accent-mf"
+              accentRing="focus:ring-accent-mf/20"
+              placeholder="50,000"
+            />
+          </div>
+
+          {/* Inflation linked toggle */}
+          <Toggle
+            label="Grows with inflation each year"
+            description={stream.inflationLinked
+              ? 'Amount increases annually — like DA-revised pensions or rental income'
+              : 'Fixed rupee amount — like LIC Jeevan Akshay or NPS annuity'}
+            value={stream.inflationLinked}
+            onChange={v => onChange({ ...stream, inflationLinked: v })}
+          />
+
+          {/* Start & End — side by side, mobile-friendly */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-medium text-text-muted">Starts</label>
+              <select
+                className="w-full bg-[#f8faff] border border-border rounded-xl px-2.5 py-2.5 text-xs text-text-primary focus:outline-none focus:border-accent-fd shadow-sm"
+                value={stream.startMonth || 0}
+                onChange={e => onChange({ ...stream, startMonth: parseInt(e.target.value, 10) })}
+              >
+                {START_OPTIONS.map(opt => (
+                  <option key={opt.months} value={opt.months}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-medium text-text-muted">Ends</label>
+              <select
+                className="w-full bg-[#f8faff] border border-border rounded-xl px-2.5 py-2.5 text-xs text-text-primary focus:outline-none focus:border-accent-fd shadow-sm"
+                value={stream.endMonth ?? -1}
+                onChange={e => {
+                  const v = parseInt(e.target.value, 10)
+                  onChange({ ...stream, endMonth: v === -1 ? null : v })
+                }}
+              >
+                {END_OPTIONS.map(opt => (
+                  <option key={opt.months ?? -1} value={opt.months ?? -1}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Main InputPanel ───────────────────────────────────────────────────────────
+
+// ─── Bucket 3 preset definitions ──────────────────────────────────────────────
+
+const B3_PRESETS = [
+  { label: 'Gold ETF',    icon: '🥇', cagr: 0.10, taxType: 'slab', note: 'Slab rate on gains since Finance Act 2023 — not equity LTCG' },
+  { label: 'Intl Equity', icon: '🌍', cagr: 0.12, taxType: 'slab', note: 'Slab rate — even Nasdaq/S&P funds changed in Finance Act 2023' },
+  { label: 'Debt MF',     icon: '📊', cagr: 0.07, taxType: 'slab', note: 'Slab rate — indexation benefit removed in Finance Act 2023' },
+  { label: 'REITs',       icon: '🏢', cagr: 0.09, taxType: 'ltcg', note: 'Equity LTCG — Budget 2024 aligned REITs to domestic equity' },
+  { label: 'Custom',      icon: '⚙️', cagr: 0.10, taxType: 'slab', note: 'Set your own expected return and tax treatment' },
+]
+
 export default function InputPanel({ inputs, onChange, isFromURL = false }) {
   const [corpusOpen,   setCorpusOpen]   = useState(!isFromURL)
   const [spendingOpen, setSpendingOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [incomeOpen,   setIncomeOpen]   = useState(false)
+  const [bucketOpen,   setBucketOpen]   = useState(false)
 
   const set = (key) => (val) => onChange({ ...inputs, [key]: val })
+
+  // ── Income stream helpers ──
+  const incomeStreams = inputs.otherIncomeStreams || []
+  const totalMonthlyIncome = incomeStreams.reduce((s, st) => s + (st.monthlyAmount || 0), 0)
+
+  function addStream(preset) {
+    const stream = {
+      id: `stream_${Date.now()}`,
+      label: preset.label === 'Other' ? '' : preset.label,
+      monthlyAmount: 0,
+      inflationLinked: preset.inflationLinked,
+      startMonth: preset.startMonth || 0,
+      endMonth: preset.endMonth ?? null,
+    }
+    onChange({ ...inputs, otherIncomeStreams: [...incomeStreams, stream] })
+    setIncomeOpen(true)
+  }
+
+  function updateStream(idx, updated) {
+    onChange({ ...inputs, otherIncomeStreams: incomeStreams.map((s, i) => i === idx ? updated : s) })
+  }
+
+  function deleteStream(idx) {
+    onChange({ ...inputs, otherIncomeStreams: incomeStreams.filter((_, i) => i !== idx) })
+  }
 
   const handleCorpusChange = (totalCorpus) => {
     onChange({
@@ -231,11 +420,22 @@ export default function InputPanel({ inputs, onChange, isFromURL = false }) {
 
   const settings3Summary = [
     `${Math.round(inputs.taxSlab * 100)}% tax`,
+    inputs.surchargePct > 0 ? `+${Math.round(inputs.surchargePct * 100)}% surcharge` : null,
+    inputs.jointPortfolio ? 'Joint' : null,
     inputs.currentAge ? `Age ${inputs.currentAge}` : null,
     `FD ${(inputs.fdStartRate * 100).toFixed(1)}%`,
     `MF ${(inputs.mfRate * 100).toFixed(0)}%`,
     `Inf ${(inputs.inflationRate * 100).toFixed(0)}%`,
   ].filter(Boolean).join(' · ')
+
+  const b3 = inputs.bucket3
+  const bucket5Summary = b3
+    ? `${formatCompact(b3.amount)} · ${b3.label} · ${Math.round(b3.cagr * 100)}% CAGR · ${b3.taxType === 'ltcg' ? 'Equity LTCG' : 'Slab rate'}`
+    : 'Optional — Gold ETF, International Equity, Debt MF'
+
+  const income4Summary = totalMonthlyIncome > 0
+    ? `${incomeStreams.length} source${incomeStreams.length !== 1 ? 's' : ''} · ${formatCompact(totalMonthlyIncome)}/mo`
+    : 'Optional — pension, rental, annuity'
 
   return (
     <div className="flex flex-col gap-3">
@@ -397,10 +597,41 @@ export default function InputPanel({ inputs, onChange, isFromURL = false }) {
             <option value={0.30}>30% slab</option>
           </select>
           <ValidationNote tone="blue">
-            💡 If your annual income (including FD interest) is under ₹10L, choose <strong>20%</strong>.
-            Under ₹5L: <strong>0–5%</strong>. The 30% slab applies only above ₹15L.
+            💡 Under new regime, income ≤ ₹12L is effectively <strong>0% tax</strong> (Budget 2025 rebate). The 30% slab applies above ₹15L in old regime.
           </ValidationNote>
         </div>
+
+        {/* Surcharge */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-semibold text-text-primary flex items-center">
+            Surcharge
+            <Tooltip text="Applicable if your annual income (FD interest + other income) exceeds ₹50L. Applied on top of income tax. LTCG surcharge is capped at 15% per IT rules." />
+          </label>
+          <select
+            className="bg-[#f8faff] border border-border rounded-xl px-3 py-2.5 text-base text-text-primary focus:outline-none focus:border-accent-fd shadow-sm"
+            value={inputs.surchargePct}
+            onChange={(e) => set('surchargePct')(parseFloat(e.target.value))}
+          >
+            <option value={0}>None — annual income below ₹50L</option>
+            <option value={0.10}>10% surcharge — income ₹50L–₹1Cr</option>
+            <option value={0.15}>15% surcharge — income ₹1Cr–₹2Cr</option>
+            <option value={0.25}>25% surcharge — income above ₹2Cr</option>
+          </select>
+          {inputs.surchargePct > 0 && (
+            <p className="text-[10px] text-text-muted leading-relaxed">
+              Effective FD tax: <span className="font-semibold">{(inputs.taxSlab * (1 + inputs.surchargePct) * 100).toFixed(1)}%</span> ·
+              Effective LTCG: <span className="font-semibold">{(0.125 * (1 + Math.min(inputs.surchargePct, 0.15)) * 1.04 * 100).toFixed(1)}%</span>
+            </p>
+          )}
+        </div>
+
+        {/* Joint portfolio */}
+        <Toggle
+          label="Joint portfolio (I + spouse)"
+          description="Doubles the LTCG annual exemption to ₹2.5L — husband and wife each get ₹1.25L separately"
+          value={inputs.jointPortfolio || false}
+          onChange={set('jointPortfolio')}
+        />
 
         {/* Age */}
         <div className="flex items-center justify-between gap-3">
@@ -534,6 +765,199 @@ export default function InputPanel({ inputs, onChange, isFromURL = false }) {
         >
           Restore defaults
         </button>
+      </CollapsibleCard>
+
+      {/* ── Card 4: Other Monthly Income ── */}
+      <CollapsibleCard
+        step="4"
+        title="Other Monthly Income"
+        summary={income4Summary}
+        open={incomeOpen}
+        onToggle={() => setIncomeOpen(o => !o)}
+      >
+        {/* Existing streams */}
+        {incomeStreams.length > 0 && (
+          <div className="flex flex-col gap-2">
+            {incomeStreams.map((stream, idx) => (
+              <IncomeStreamCard
+                key={stream.id}
+                stream={stream}
+                onChange={updated => updateStream(idx, updated)}
+                onDelete={() => deleteStream(idx)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Quick-add presets */}
+        <div className="flex flex-col gap-2">
+          <p className="text-[10px] font-medium text-text-muted">
+            {incomeStreams.length === 0 ? 'Add an income source:' : 'Add another:'}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {INCOME_PRESETS.map(preset => (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => addStream(preset)}
+                className="flex items-center gap-1 px-2.5 py-2 rounded-lg border border-border text-[11px] text-text-secondary hover:border-accent-mf/50 hover:text-accent-mf hover:bg-accent-mf/5 transition-colors min-h-[36px]"
+              >
+                <span className="text-sm leading-none">{preset.icon}</span>
+                <span>{preset.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Helper note */}
+        <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
+          <span className="text-blue-400 text-xs flex-shrink-0 mt-px">ℹ</span>
+          <p className="text-[11px] text-blue-700 leading-relaxed">
+            Enter <strong>post-tax amounts</strong> — what actually reaches your bank account.
+            These reduce how much is drawn from your corpus each month.
+          </p>
+        </div>
+      </CollapsibleCard>
+
+      {/* ── Card 5: Additional Bucket (Bucket 3) ── */}
+      <CollapsibleCard
+        step="5"
+        title="Additional Bucket"
+        summary={bucket5Summary}
+        open={bucketOpen}
+        onToggle={() => setBucketOpen(o => !o)}
+      >
+        {/* Preset chips */}
+        <div className="flex flex-col gap-2">
+          <p className="text-[10px] font-medium text-text-muted">Pick an asset type to add as a third bucket:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {B3_PRESETS.map(preset => {
+              const isActive = b3 && b3.label === preset.label
+              return (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => {
+                    if (isActive) {
+                      onChange({ ...inputs, bucket3: null })
+                    } else {
+                      onChange({
+                        ...inputs,
+                        bucket3: {
+                          label: preset.label,
+                          cagr: preset.cagr,
+                          taxType: preset.taxType,
+                          amount: b3?.amount || 0,
+                        },
+                      })
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-[11px] transition-colors min-h-[36px] ${
+                    isActive
+                      ? 'border-amber-400 bg-amber-50 text-amber-700 font-semibold'
+                      : 'border-border text-text-secondary hover:border-amber-300 hover:text-amber-700 hover:bg-amber-50/50'
+                  }`}
+                >
+                  <span className="text-sm leading-none">{preset.icon}</span>
+                  <span>{preset.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* B3 configuration — only when a preset is selected */}
+        {b3 && (
+          <>
+            {/* Amount */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-semibold text-text-primary">{b3.label} — Amount</label>
+              <p className="text-xs text-text-muted">How much of your corpus is currently in {b3.label}?</p>
+              <MoneyInput
+                value={b3.amount}
+                onChange={v => onChange({ ...inputs, bucket3: { ...b3, amount: v } })}
+                accentBorder="focus:border-amber-400"
+                accentRing="focus:ring-amber-400/20"
+                placeholder="10,00,000"
+              />
+            </div>
+
+            {/* CAGR slider */}
+            <SliderInput
+              label={`Expected return (CAGR) — ${b3.label}`}
+              value={b3.cagr}
+              onChange={v => onChange({ ...inputs, bucket3: { ...b3, cagr: v } })}
+              min={0.04}
+              max={0.20}
+              step={0.005}
+              tooltip={`Historical approximate: Gold ETF ~10%, Intl Equity ~12%, Debt MF ~7%, REITs ~9%. These are long-run estimates — actual returns vary.`}
+            />
+
+            {/* Tax type toggle */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-medium text-text-secondary">Tax treatment on redemption</label>
+              <div className="flex gap-2">
+                {[
+                  { id: 'slab', label: 'Slab rate', desc: 'Gains taxed at your income slab (20–30%+)' },
+                  { id: 'ltcg', label: 'Equity LTCG', desc: '12.5% on gains above ₹1.25L/year' },
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => onChange({ ...inputs, bucket3: { ...b3, taxType: opt.id } })}
+                    className={`flex-1 py-2.5 px-3 rounded-xl border text-left transition-colors ${
+                      b3.taxType === opt.id
+                        ? 'border-accent-fd bg-accent-fd/8 text-accent-fd'
+                        : 'border-border text-text-muted hover:border-accent-fd/40'
+                    }`}
+                  >
+                    <div className="text-[11px] font-semibold">{opt.label}</div>
+                    <div className="text-[9px] mt-0.5 opacity-80 leading-tight">{opt.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Education note — auto-selected based on preset */}
+            {(() => {
+              const preset = B3_PRESETS.find(p => p.label === b3.label)
+              if (!preset) return null
+              const effectiveTaxRate = b3.taxType === 'ltcg'
+                ? `~${(0.125 * (1 + Math.min(inputs.surchargePct || 0, 0.15)) * 1.04 * 100).toFixed(0)}% on gains above ₹1.25L/yr`
+                : `~${(inputs.taxSlab * (1 + (inputs.surchargePct || 0)) * 100).toFixed(0)}% on all gains`
+              return (
+                <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
+                  <span className="text-amber-500 text-xs flex-shrink-0 mt-px">ℹ</span>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    <strong>{b3.label}:</strong> {preset.note}. At your slab, effective tax ≈ <strong>{effectiveTaxRate}</strong>.
+                    {b3.taxType === 'slab' && inputs.taxSlab >= 0.20 && (
+                      <> Compare: Equity MF gains are taxed at just ~13%.</>
+                    )}
+                  </p>
+                </div>
+              )
+            })()}
+
+            {/* Remove button */}
+            <button
+              type="button"
+              onClick={() => onChange({ ...inputs, bucket3: null })}
+              className="text-[11px] text-red-500 hover:underline self-start"
+            >
+              Remove {b3.label} bucket
+            </button>
+          </>
+        )}
+
+        {!b3 && (
+          <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
+            <span className="text-blue-400 text-xs flex-shrink-0 mt-px">ℹ</span>
+            <p className="text-[11px] text-blue-700 leading-relaxed">
+              Bucket 3 grows alongside your MF. When MF is depleted, it takes over as the refill source — extending your runway.
+              <strong> Gold ETF and Intl Equity are taxed at slab rate</strong> (not LTCG) since Finance Act 2023.
+            </p>
+          </div>
+        )}
       </CollapsibleCard>
 
       <p className="text-[10px] text-text-muted text-center px-2">

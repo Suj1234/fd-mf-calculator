@@ -12,7 +12,7 @@ function Chip({ label, value, valueClass = 'text-text-secondary' }) {
   )
 }
 
-export default function PhaseCard({ phase, baseWithdrawal }) {
+export default function PhaseCard({ phase, baseWithdrawal, bucket3 = null }) {
   const [expanded, setExpanded] = useState(false)
   // Health-based color (green=long → red=short) — same scale as the timeline,
   // so a cycle's badge, border and timeline block all read the same.
@@ -70,6 +70,12 @@ export default function PhaseCard({ phase, baseWithdrawal }) {
             <Chip label="MF at start" value={formatCompact(phase.mfStart)}   valueClass="text-accent-mf" />
             <Chip label="Withdrawn"  value={formatCompact(phase.totalNomWd)} valueClass="text-accent-wd" />
             <Chip label="MF at end"  value={phase.perpetual ? '∞' : formatCompact(phase.mfEndNominal)} valueClass="text-accent-mf" />
+            {bucket3 && phase.b3Start > 0 && (
+              <>
+                <Chip label={`${bucket3.label} start`} value={formatCompact(phase.b3Start)} valueClass="text-amber-600" />
+                <Chip label={`${bucket3.label} end`}   value={phase.perpetual ? '∞' : formatCompact(phase.nextB3 ?? phase.b3End)} valueClass="text-amber-600" />
+              </>
+            )}
           </div>
 
           {/* Why FD ≠ MF at start — LTCG tax explanation */}
@@ -79,6 +85,27 @@ export default function PhaseCard({ phase, baseWithdrawal }) {
               <p className="text-[11px] text-amber-800 leading-relaxed">
                 FD opened (<span className="font-semibold">{formatCompact(phase.fdPrincipal)}</span>) is less than MF at start (<span className="font-semibold">{formatCompact(phase.mfStart)}</span>) because{' '}
                 <span className="font-semibold">{formatCompact(phase.incomingLtcgTax)}</span> LTCG tax was deducted when selling MF to fund this FD.
+              </p>
+            </div>
+          )}
+
+          {/* B3 was the refill source — explain FD ≠ B3 at sale */}
+          {phase.incomingB3Tax > 0 && bucket3 && (
+            <div className="mt-2 flex items-start gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <span className="text-amber-500 text-xs flex-shrink-0 mt-px">ℹ</span>
+              <p className="text-[11px] text-amber-800 leading-relaxed">
+                FD opened (<span className="font-semibold">{formatCompact(phase.fdPrincipal)}</span>) reflects{' '}
+                <span className="font-semibold">{formatCompact(phase.incomingB3Tax)}</span> {bucket3.label} tax deducted when selling {bucket3.taxType === 'ltcg' ? '(LTCG)' : '(slab rate)'} to fund this FD.
+              </p>
+            </div>
+          )}
+
+          {/* "Drawing from B3" banner */}
+          {phase.fromB3 && bucket3 && (
+            <div className="mt-2 flex items-center gap-1.5 bg-amber-100 border border-amber-300 rounded-lg px-3 py-2">
+              <span className="text-amber-600 text-xs">🪣</span>
+              <p className="text-[11px] text-amber-800 font-medium">
+                MF depleted — drawing from {bucket3.label} ({bucket3.taxType === 'ltcg' ? 'Equity LTCG tax' : 'slab rate tax on gains'})
               </p>
             </div>
           )}
@@ -113,20 +140,19 @@ export default function PhaseCard({ phase, baseWithdrawal }) {
             />
             {!phase.perpetual && (
               <>
-                <Chip
-                  label="LTCG tax at phase end"
-                  value={formatCompact(phase.ltcgTax)}
-                  valueClass="text-accent-tax"
-                />
-                <Chip
-                  label="Taxable MF gains"
-                  value={formatCompact(phase.taxableGains)}
-                />
-                <Chip
-                  label="New FD after tax"
-                  value={formatCompact(phase.nextFD)}
-                  valueClass="text-accent-fd"
-                />
+                {!phase.fromB3 && (
+                  <>
+                    <Chip label="LTCG tax at phase end" value={formatCompact(phase.ltcgTax)} valueClass="text-accent-tax" />
+                    <Chip label="Taxable MF gains"      value={formatCompact(phase.taxableGains)} />
+                  </>
+                )}
+                {phase.fromB3 && bucket3 && (
+                  <>
+                    <Chip label={`${bucket3.label} tax`}          value={formatCompact(phase.b3Tax || 0)}          valueClass="text-accent-tax" />
+                    <Chip label={`Taxable ${bucket3.label} gains`} value={formatCompact(phase.b3TaxableGains || 0)} />
+                  </>
+                )}
+                <Chip label="New FD after tax" value={formatCompact(phase.nextFD)} valueClass="text-accent-fd" />
               </>
             )}
           </div>

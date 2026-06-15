@@ -65,6 +65,37 @@ function parseFromURL() {
       else overrides[key] = parseFloat(v)
     }
   }
+
+  // Income streams — base64-encoded JSON array
+  const isParam = params.get('is')
+  if (isParam) {
+    try {
+      overrides.otherIncomeStreams = JSON.parse(atob(isParam)).map((s, idx) => ({
+        id: `url_${idx}`,
+        label: s.l || '',
+        monthlyAmount: s.a || 0,
+        inflationLinked: s.i === 1,
+        startMonth: s.s || 0,
+        endMonth: s.e === -1 ? null : (s.e || null),
+      }))
+    } catch { /* invalid param — ignore */ }
+  }
+
+  // Bucket 3 — base64-encoded JSON object
+  const b3Param = params.get('b3')
+  if (b3Param) {
+    try {
+      const b3 = JSON.parse(atob(b3Param))
+      overrides.bucket3 = { label: b3.l || 'Custom', amount: b3.a || 0, cagr: b3.c || 0.10, taxType: b3.t || 'slab' }
+    } catch { /* invalid param — ignore */ }
+  }
+
+  // Surcharge & joint portfolio
+  const surchargeParam = params.get('surcharge')
+  if (surchargeParam !== null) overrides.surchargePct = parseFloat(surchargeParam)
+  const jointParam = params.get('joint')
+  if (jointParam !== null) overrides.jointPortfolio = jointParam === '1'
+
   return Object.keys(overrides).length > 0 ? { ...DEFAULT_INPUTS, ...overrides } : null
 }
 
@@ -82,6 +113,30 @@ function serializeToURL(inputs) {
   params.set('fdd', inputs.fdDeclineEnabled ? '1' : '0')
   params.set('floor', String(inputs.fdFloor))
   params.set('ltcgex', String(inputs.ltcgExemption))
+
+  // Income streams — only add param when streams exist
+  const streams = inputs.otherIncomeStreams || []
+  if (streams.length > 0) {
+    const compact = streams.map(s => ({
+      l: s.label,
+      a: s.monthlyAmount,
+      i: s.inflationLinked ? 1 : 0,
+      s: s.startMonth || 0,
+      e: s.endMonth ?? -1,
+    }))
+    params.set('is', btoa(JSON.stringify(compact)))
+  }
+
+  // Bucket 3
+  if (inputs.bucket3) {
+    const b3 = inputs.bucket3
+    params.set('b3', btoa(JSON.stringify({ l: b3.label, a: b3.amount, c: b3.cagr, t: b3.taxType })))
+  }
+
+  // Surcharge & joint portfolio
+  if (inputs.surchargePct > 0) params.set('surcharge', String(inputs.surchargePct))
+  if (inputs.jointPortfolio) params.set('joint', '1')
+
   return '?' + params.toString()
 }
 
@@ -212,6 +267,11 @@ export default function App() {
   const activeResult = result
     ? (activeScenario === 'A' ? result.scenarioA : result.scenarioB)
     : null
+
+  // Year-1 other income (streams active from month 0) — for HeroSummary coverage banner
+  const monthlyOtherIncome = (debouncedInputs.otherIncomeStreams || [])
+    .filter(s => (s.startMonth || 0) === 0 && (s.monthlyAmount || 0) > 0)
+    .reduce((sum, s) => sum + s.monthlyAmount, 0)
 
   const copyShareLink = useCallback(() => {
     navigator.clipboard.writeText(window.location.href).then(() => {
@@ -630,6 +690,7 @@ export default function App() {
                               currentAge={debouncedInputs.currentAge}
                               monthlyWithdrawal={debouncedInputs.monthlyWithdrawal}
                               inflationRate={debouncedInputs.inflationRate}
+                              monthlyOtherIncome={monthlyOtherIncome}
                             />
                             <InlineWarnings inputs={debouncedInputs} result={result} />
                             {activeResult && activeResult.totalTax > 0 && (
@@ -681,6 +742,7 @@ export default function App() {
                                 phases={activeResult.phases}
                                 baseWithdrawal={debouncedInputs.monthlyWithdrawal}
                                 scenarioKey={activeScenario}
+                                bucket3={debouncedInputs.bucket3 || null}
                               />
                             </div>
                           </div>
@@ -690,7 +752,7 @@ export default function App() {
                         key: 'tax', icon: '💰', label: 'Tax', printTitle: 'Tax & comparison',
                         content: activeResult ? (
                           <div className="flex flex-col gap-4">
-                            <TaxSummary phases={activeResult.phases} perpetual={activeResult.perpetual} />
+                            <TaxSummary phases={activeResult.phases} perpetual={activeResult.perpetual} bucket3={debouncedInputs.bucket3 || null} />
                             <ComparisonTable scenarioA={result.scenarioA} scenarioB={result.scenarioB} />
                           </div>
                         ) : null,
